@@ -25,7 +25,7 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | Fload of Id.t * Id.t * id_or_imm
+  | FLoad of Id.t * Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
   | Comment of string
   (* virtual instructions *)
@@ -88,7 +88,7 @@ let rec fv_exp = function
       x :: fv_id_or_imm y'
   | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) ->
       [x; y]
-  | Store (x, y, z') | FStore (x, y, z') | Fload (x, y, z') | Load (x, y, z') -> 
+  | Store (x, y, z') | FStore (x, y, z') | FLoad (x, y, z') | Load (x, y, z') -> 
      x :: y :: fv_id_or_imm z'
   | IfEq (x, y', e1, e2) | IfLE (x, y', e1, e2) | IfGE (x, y', e1, e2) -> 
       x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
