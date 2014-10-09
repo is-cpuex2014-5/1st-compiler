@@ -64,7 +64,7 @@ let reg_sw = regs.(Array.length regs - 2) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_hp = "%r13"
 let reg_sp = "%r14"
-
+let reg_tmp = "%r15"
 
 (* is_reg : Id.t -> bool *)
 let is_reg x = x.[0] = '%'
