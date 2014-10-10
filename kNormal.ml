@@ -177,3 +177,62 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
 		(fun z -> Put(x, y, z), Type.Unit)))
 
 let f e = fst (g M.empty e)
+
+let rec intend oc =function
+  | 0 -> ()
+  | n -> Printf.fprintf oc "\t"; intend oc (n-1)
+
+let pid oc n s= intend oc n; Printf.fprintf oc "%s\n" s
+let pname oc fdef =  let (s, t) = fdef.name in
+		     Printf.fprintf oc "NAME %s : " s; Type.p oc t; Printf.fprintf oc " \n"
+let pargs oc fdef =  Printf.fprintf oc "BODY "; 
+		     List.iter (fun (x,y) -> Printf.fprintf oc " %s : " x; Type.p oc y) fdef.args; Printf.fprintf oc " \n"
+
+let p oc e = 
+  let rec f n e' = 
+    let rec g n = function
+      | Unit -> Printf.fprintf oc "UNIT\n"
+      | Int i -> Printf.fprintf oc "INT %d\n" i
+      | Float f -> Printf.fprintf oc "FLOAT %f\n" f
+      | Neg s -> Printf.fprintf oc "NEG\n"; 
+		 pid oc (n+1) s
+      | Add (s1, s2) -> Printf.fprintf oc "ADD\n";
+			pid oc (n+1) s1; pid oc (n+1) s2
+      | Sub (s1, s2) -> Printf.fprintf oc "SUB\n"; 
+			pid oc (n+1) s1; pid oc (n+1) s2
+      | FNeg s ->  Printf.fprintf oc "FNEG\n"; 
+		   pid oc (n+1)  s
+      | FAdd (s1, s2) -> Printf.fprintf oc "FADD\n";
+			 pid oc (n+1) s1; pid oc (n+1) s2
+      | FSub (s1, s2) -> Printf.fprintf oc "FSUB\n";
+			 pid oc (n+1) s1; pid oc (n+1) s2
+      | FMul (s1, s2) -> Printf.fprintf oc "FMUL\n";
+			 pid oc (n+1) s1; pid oc (n+1) s2
+      | FDiv (s1, s2) -> Printf.fprintf oc "FDIV\n";
+			 pid oc (n+1) s1; pid oc (n+1) s2
+      | IfEq (s1, s2, e1, e2) -> Printf.fprintf oc "IFEQ\n";
+				 pid oc (n+1) s1; pid oc (n+1) s2;
+				 f (n+1) e1; f (n+1) e2
+      | IfLE (s1, s2, e1, e2) -> Printf.fprintf oc "IFLE\n";
+				 pid oc (n+1) s1; pid oc (n+1) s2;
+				 f (n+1) e1; f (n+1) e2
+      | Let ((s, t), e1, e2) ->  Printf.fprintf oc "LET %s : " s; Type.p oc t; Printf.fprintf oc " \n";
+				 f (n+1) e1; f (n+1) e2
+      | Var s -> Printf.fprintf oc "VAR %s\n" s
+      | LetRec (fdef, s1) -> Printf.fprintf oc "LETREC\n";
+			     intend oc (n+1); pname oc fdef;
+			     intend oc (n+1); pname oc fdef;
+			     intend oc (n+1); Printf.fprintf oc "BODY\n"; f (n+2) fdef.body;
+			     f (n+1) s1
+      | App (s1, l) -> Printf.fprintf oc "APP\n";  pid oc (n+1) s1; List.iter (pid oc (n+1)) l 
+      | Tuple l ->  Printf.fprintf oc "TUPLE\n"; List.iter (pid oc (n+1)) l       
+      | LetTuple (l, s1, e1) -> Printf.fprintf oc "LETTUPLE ";List.iter (fun (x,y) -> Printf.fprintf oc " %s : " x; Type.p oc y) l; Printf.fprintf oc " \n";
+				pid oc (n+1) s1; f (n+1) e1
+      | Get (s1, s2) -> Printf.fprintf oc "GET\n"; pid oc (n+1) s1; pid oc (n+1) s2
+      | Put (s1, s2, s3) ->  Printf.fprintf oc "PUT\n"; pid oc (n+1) s1; pid oc (n+1) s2; pid oc (n+1) s3
+      | ExtArray s ->  Printf.fprintf oc "EXTARRAY\n"; pid oc (n+1) s
+      | ExtFunApp (s, l) ->  Printf.fprintf oc "EXTFUNAPP\n"; pid oc (n+1) s;
+			     List.iter (pid oc (n+1)) l
+    in 
+    intend oc n; g n e'
+  in f 0 e
