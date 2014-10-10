@@ -5,18 +5,23 @@ let rec g env = function (* 命令列の 16 bit 即値最適化 *)
   | Let((x, t), Li(i), e) when (-32768 <= i) && (i < 32768) ->
       let e' = g (M.add x i env) e in
       if List.mem x (fv e') then Let((x, t), Li(i), e') else e'
-  | Let(xt, Slw(y, C(i)), e) when M.mem y env -> (* for array access *)
+  | Let(xt, Sll(y, C(i)), e) when M.mem y env -> (* for array access *)
       g env (Let(xt, Li((M.find y env) lsl i), e))
   | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
 and g' env = function (* 各命令の 16 bit 即値最適化 *)
-  | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
-  | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
-  | Sub(x, V(y)) when M.mem y env -> Sub(x, C(M.find y env))
-  | Slw(x, V(y)) when M.mem y env -> Slw(x, C(M.find y env))
-  | Lwz(x, V(y)) when M.mem y env -> Lwz(x, C(M.find y env))
-  | Stw(x, y, V(z)) when M.mem z env -> Stw(x, y, C(M.find z env))
-  | Lfd(x, V(y)) when M.mem y env -> Lfd(x, C(M.find y env))
-  | Stfd(x, y, V(z)) when M.mem z env -> Stfd(x, y, C(M.find z env))
+  | Add(x, y, C(i)) when M.mem y env && (let j = M.find y env + i in (-4096 <= j) && (j < 4096)) ->
+     Add(x, "%r0", C(M.find y env + i))
+  | Add(x, y, C(i)) when M.mem x env && (let j = M.find x env + i in (-4096 <= j) && (j < 4096)) -> 
+     Add(y, "%r0", C(M.find x env + i))
+  (*| Sub(x, V(y)) when M.mem y env -> Sub(x, C(M.find y env))*)
+  | Sll(x, V(y)) when M.mem y env -> Sll(x, C(M.find y env))
+  | Sla(x, V(y)) when M.mem y env -> Sla(x, C(M.find y env))
+  | Srl(x, V(y)) when M.mem y env -> Srl(x, C(M.find y env))
+  | Sra(x, V(y)) when M.mem y env -> Sra(x, C(M.find y env))
+  | Load(x, y, V(z)) when M.mem y env -> Load(x, y, C(M.find z env)) (*TODO: 実際には17bitの即値の余裕があるはず*)
+  | Store(x, y, V(z)) when M.mem z env -> Store(x, y, C(M.find z env))
+  | FLoad(x, y, V(z)) when M.mem y env -> FLoad(x, y, C(M.find z env))
+  | FStore(x, y, V(z)) when M.mem z env -> FStore(x, y, C(M.find z env))
   | IfEq(x, V(y), e1, e2) when M.mem y env -> 
       IfEq(x, C(M.find y env), g env e1, g env e2)
   | IfLE(x, V(y), e1, e2) when M.mem y env ->
