@@ -1,30 +1,34 @@
 type id_or_imm = V of Id.t | C of int
-type t = 
+type t = (* 命令の列 *)
   | Ans of exp
   | Let of (Id.t * Type.t) * exp * t
 and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命令がごっそりない*)
   | Nop
   | Li of int
-  | FLi of Id.l (*必要なのか*)
+  | FLi of Id.l 
   | SetL of Id.l (*Set Label*)
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t
+  | Add of Id.t * id_or_imm
+  | Sub of Id.t * id_or_imm
   | Sll of Id.t * id_or_imm
   | Srl of Id.t * id_or_imm
   | Sla of Id.t * id_or_imm
   | Sra of Id.t * id_or_imm
-  | Load of Id.t * Id.t *  id_or_imm
+  | Load of Id.t * id_or_imm
   | Store of Id.t * Id.t * id_or_imm
+  | Loadi of int
+  | Storei of Id.t * int
   | FMov of Id.t  (*ftoi, itofがない状態*)
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | FLoad of Id.t * Id.t * id_or_imm
+  | FLoad of Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
+  | FLoadi of int 
+  | FStorei of Id.t * int
   | Comment of string
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t

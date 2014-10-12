@@ -64,21 +64,21 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	Printf.fprintf oc "\tori\t%s, %s, %d\n" r r m
   | (NonTail(x), FLi(Id.L(l))) ->
       let s = load_label reg_tmp l in
-      Printf.fprintf oc "%s\tlfd\t%s, 0(%s)\n" s (reg x) reg_tmp
+      Printf.fprintf oc "%s\tlfd\t%s, %s, 0\n" s (reg x) reg_tmp
   | (NonTail(x), SetL(Id.L(y))) -> 
       let s = load_label x y in
       Printf.fprintf oc "%s" s
   | (NonTail(x), Mov(y)) when x = y -> ()
   | (NonTail(x), Mov(y)) -> Printf.fprintf oc "\tmov\t%s, %s\n" (reg x) (reg y)
   | (NonTail(x), Neg(y)) -> Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg y)
-  | (NonTail(x), Add(y, z, C(i))) -> 
-      Printf.fprintf oc "\tadd\t%s, %s, %s, %d\n" (reg x) (reg y) (reg z) i
- (* | (NonTail(x), Add(y, C(z))) -> 
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg x) (reg y) z *)
-  | (NonTail(x), Sub(y, z)) -> 
+  | (NonTail(x), Add(y, V(z))) -> 
+      Printf.fprintf oc "\tadd\t%s, %s, %s, 0\n" (reg x) (reg y) (reg z)
+ | (NonTail(x), Add(y, C(z))) -> 
+      Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg x) (reg y) z 
+  | (NonTail(x), Sub(y, V(z))) -> 
       Printf.fprintf oc "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
- (* | (NonTail(x), Sub(y, C(z))) -> 
-      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z*)
+ | (NonTail(x), Sub(y, C(z))) -> 
+      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z
   | (NonTail(x), Sll(y, V(z))) -> 
       Printf.fprintf oc "\tsll\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(x), Sll(y, C(z))) -> 
@@ -95,14 +95,18 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       Printf.fprintf oc "\tsra\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(x), Sra(y, C(z))) -> 
       Printf.fprintf oc "\tsrai\t%s, %s, %d\n" (reg x) (reg y) z
-  | (NonTail(x), Load(y, _, V(z))) ->
+  | (NonTail(x), Load(y, V(z))) ->
       Printf.fprintf oc "\tloadr\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | (NonTail(x), Load(y, _, C(z))) -> 
-      Printf.fprintf oc "\tload\t%s, %s, %d\n" (reg x) (reg y) z
+  | (NonTail(x), Load(y, C(z))) -> 
+      Printf.fprintf oc "\tload\t%s, %s, %d\n" (reg x) (reg y) z 
+  | (NonTail(x), Loadi(y)) -> 
+      Printf.fprintf oc "\tloadi\t%s, %d\n" (reg x) y
   | (NonTail(_), Store(x, y, V(z))) ->
       Printf.fprintf oc "\tstorer\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(_), Store(x, y, C(z))) -> 
       Printf.fprintf oc "\tstore\t%s, %s, %d\n" (reg x) (reg y) z
+  | (NonTail(_), Storei(x, y)) -> 
+      Printf.fprintf oc "\tstorei\t%s, %d\n" (reg x) y
   | (NonTail(x), FMov(y)) when x = y -> ()
   | (NonTail(x), FMov(y)) -> Printf.fprintf oc "\tfmov\t%s, %s\n" (reg x) (reg y)
   | (NonTail(x), FNeg(y)) -> 
@@ -115,14 +119,18 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       Printf.fprintf oc "\tfmul\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(x), FDiv(y, z)) -> 
       Printf.fprintf oc "\tfdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | (NonTail(x), FLoad(y, _,  V(z))) ->
+  | (NonTail(x), FLoad(y, V(z))) ->
       Printf.fprintf oc "\tfloadr\t%s, %s, %s\n" (reg x) (reg y) (reg z)
-  | (NonTail(x), FLoad(y, _, C(z))) -> 
+  | (NonTail(x), FLoad(y, C(z))) -> 
       Printf.fprintf oc "\tfload\t%s, %s, %d\n" (reg x) (reg y) z
+  | (NonTail(x), FLoadi(y)) -> 
+      Printf.fprintf oc "\tfloadi\t%s, %d\n" (reg x) y
   | (NonTail(_), FStore(x, y, V(z))) ->
       Printf.fprintf oc "\tfstorer\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(_), FStore(x, y, C(z))) ->
-      Printf.fprintf oc "\tfstore\t%s, %d(%s)\n" (reg x) z (reg y)
+      Printf.fprintf oc "\tfstore\t%s, %s, %d\n" (reg x) (reg y) z
+  | (NonTail(_), FStorei(x, y)) ->
+      Printf.fprintf oc "\tfstorei\t%s, %d\n" (reg x) y 
   | (NonTail(_), Comment(s)) -> Printf.fprintf oc "#\t%s\n" s
   (* 退避の仮想命令の実装 *)
   | (NonTail(_), Save(x, y))
@@ -140,15 +148,15 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), Restore(y)) ->
       assert (List.mem x allfregs);
       Printf.fprintf oc "\tfload\t%s, %s, %d\n" (reg x) reg_sp (offset y)   (* 末尾だったら計算結果を第一レジスタにセット *)
-  | (Tail, (Nop | Store _ | FStore _ | Comment _ | Save _ as exp)) ->
+  | (Tail, (Nop | Store _ | Storei _ |  FStore _ | FStorei _ |  Comment _ | Save _ as exp)) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Li _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Sll _ | Sla _ | Srl _ | Sra _ |
-            Load _ as exp)) -> 
+            Load _ | Loadi _ as exp)) -> 
       g' oc (NonTail(regs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (FLi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |
-            FLoad _ as exp)) ->
+            FLoad _ | FLoadi _  as exp)) ->
       g' oc (NonTail(fregs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Restore(x) as exp)) ->

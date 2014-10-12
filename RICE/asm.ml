@@ -7,26 +7,30 @@ type t = (* 命令の列 *)
 and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命令がごっそりない*)
   | Nop
   | Li of int
-  | FLi of Id.l (*必要なのか*)
+  | FLi of Id.l 
   | SetL of Id.l (*Set Label*)
   | Mov of Id.t
   | Neg of Id.t
-  | Add of Id.t * Id.t * id_or_imm
-  | Sub of Id.t * Id.t
+  | Add of Id.t * id_or_imm
+  | Sub of Id.t * id_or_imm
   | Sll of Id.t * id_or_imm
   | Srl of Id.t * id_or_imm
   | Sla of Id.t * id_or_imm
   | Sra of Id.t * id_or_imm
-  | Load of Id.t * Id.t *  id_or_imm
+  | Load of Id.t * id_or_imm
   | Store of Id.t * Id.t * id_or_imm
+  | Loadi of int
+  | Storei of Id.t * int
   | FMov of Id.t  (*ftoi, itofがない状態*)
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
-  | FLoad of Id.t * Id.t * id_or_imm
+  | FLoad of Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
+  | FLoadi of int 
+  | FStorei of Id.t * int
   | Comment of string
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
@@ -80,16 +84,17 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V (x) -> [x] | _ -> []
 (* fv_exp : Id.t list -> t -> S.t list *)
 let rec fv_exp = function
-  | Nop | Li (_) | FLi (_) | SetL (_) | Comment (_) | Restore (_) -> []
-  | Mov (x) | Neg (x) | FMov (x) | FNeg (x) | Save (x, _) -> [x]
-  | Add (x, y, z') -> x :: y :: fv_id_or_imm z'
-  | Sub (x, y) -> [x;y] 
-  | Sll (x, y') | Srl (x, y') |Sla (x, y') |Sra (x, y') -> 
-      x :: fv_id_or_imm y'
+  | Nop | Li (_) | FLi (_) | SetL (_) | Loadi (_) | FLoadi (_) |
+  Comment (_) | Restore (_) -> []
+  | Mov (x) | Neg (x) | Storei (x, _) | FMov (x) | FNeg (x) | FStorei (x, _) | 
+  Save (x, _) -> [x]
+  | Add (x, y') | Sub (x, y') -> x ::  fv_id_or_imm y'
+  | Sll (x, y') | Srl (x, y') |Sla (x, y') |Sra (x, y') |
+  Load (x, y') | FLoad (x, y') ->  
+   x :: fv_id_or_imm y'
   | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) ->
       [x; y]
-  | Store (x, y, z') | FStore (x, y, z') | FLoad (x, y, z') | Load (x, y, z') -> 
-     x :: y :: fv_id_or_imm z'
+  | Store (x, y, z') | FStore (x, y, z') -> x :: y :: fv_id_or_imm z'
   | IfEq (x, y', e1, e2) | IfLE (x, y', e1, e2) | IfGE (x, y', e1, e2) -> 
       x :: fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
   | IfFEq (x, y, e1, e2) | IfFLE (x, y, e1, e2) ->
