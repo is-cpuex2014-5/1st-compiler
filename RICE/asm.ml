@@ -55,7 +55,7 @@ let fletd (x, e1, e2) = Let ((x, Type.Float), e1, e2)
 (* seq : exp * t -> t *)
 let seq (e1, e2) = Let ((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
-let regs = Array.init 9 (fun i -> match i with 
+let regs = Array.init 10 (fun i -> match i with 
 				   | m when m < 9 -> Printf.sprintf "$r0%d" (i+1)
 				   | _ -> Printf.sprintf "$r%d" (i+1))
 let fregs = Array.init 15 (fun i -> match i with 
@@ -66,8 +66,7 @@ let allfregs = Array.to_list fregs
 let reg_cl = regs.(Array.length regs - 1) (* closure address *)
 let reg_sw = regs.(Array.length regs - 2) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
-let reg_tmp = "$r10"
-let link_reg = "$r11"
+let reg_tmp = "$r11"
 let cnt_reg = "$12"
 let reg_hp = "$r13"
 let reg_sp = "$r14"

@@ -222,23 +222,23 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_args oc [] ys zs;
       Printf.fprintf oc "\tb\t%s\n" x
   | (NonTail(a), CallCls(x, ys, zs)) ->
-      Printf.fprintf oc "\tmov\t%s, %s\n" reg_tmp link_reg; 
+      Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
 	Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
 	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, 0\n" reg_tmp ((*reg*) reg_cl);
 	Printf.fprintf oc "\tmov\t%s, %s\n" cnt_reg reg_tmp ;
-	Printf.fprintf oc "\taddi\t%s, %s, 1\n\tbeq\t$r0, $r0, %s\n" link_reg pc cnt_reg; (*TODO: beqでいいのか？*)
+	Printf.fprintf oc "\taddi\t%s, %s, 4\n\tstore\t%s, %s, -4\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*TODO: beqでいいのか？,その他の部分も少し怪しい？*)
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
 	(if List.mem a allregs && a <> regs.(0) then 
 	   Printf.fprintf oc "\tmov\t%s, %s\n" ((*reg*) a) ((*reg*) regs.(0)) 
 	 else if List.mem a allfregs && a <> fregs.(0) then 
 	   Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
-	Printf.fprintf oc "\tmov\t%s, %s\n" link_reg reg_tmp 
+	Printf.fprintf oc "\tstore\t%s, %s, -4\n"  reg_tmp reg_sp 
   | (NonTail(a), CallDir(Id.L(x), ys, zs)) -> 
-      Printf.fprintf oc "\tmov\t%s, %s\n" reg_tmp link_reg; 
+      Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
       g'_args oc [] ys zs;
       let ss = stacksize () in
 	Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
@@ -250,7 +250,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	   Printf.fprintf oc "\tmov\t%s, %s\n" ((*reg*) a) ((*reg*) regs.(0))
 	 else if List.mem a allfregs && a <> fregs.(0) then
 	   Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
-	Printf.fprintf oc "\tmov\t%s, %s\n" link_reg reg_tmp 
+	Printf.fprintf oc "\tstore\t%s, %s, -4\n" reg_tmp reg_sp
 and g'_tail_if oc e1 e2 b bn x y = 
   let b_else = Id.genid (b ^ "_else") in
     Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
