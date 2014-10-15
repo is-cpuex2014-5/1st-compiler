@@ -17,7 +17,6 @@ let rec p oc = function
   | Bool -> Printf.fprintf oc "BOOL"
   | Int -> Printf.fprintf oc "INT"
   | Float -> Printf.fprintf oc "FLOAT"
-  | Unit -> Printf.fprintf oc "UNIT"
   | Fun (l, t) -> Printf.fprintf oc "FUN ";
 		List.iter (fun x -> p oc x; Printf.fprintf oc "  -> ") l;
 		p oc t
