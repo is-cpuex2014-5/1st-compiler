@@ -5,7 +5,8 @@ open Type
 }
 
 (* 正規表現の略記 *)
-let space = [' ' '\t' '\n' '\r']
+let newline = ['\n']
+let space = [' ' '\t' '\r']
 let digit = ['0'-'9']
 let lower = ['a'-'z']
 let upper = ['A'-'Z']
@@ -13,6 +14,7 @@ let upper = ['A'-'Z']
 rule token = parse
 | space+
     { token lexbuf }
+| newline { Pos.add_line lexbuf; token lexbuf}
 | "(*"
     { comment lexbuf; (* ネストしたコメントのためのトリック *)
       token lexbuf }
@@ -83,17 +85,20 @@ rule token = parse
 | lower (digit|lower|upper|'_')* (* 他の「予約語」より後でないといけない *)
     { IDENT(Lexing.lexeme lexbuf) }
 | _
-    { failwith
-	(Printf.sprintf "unknown token %s near characters %d-%d"
-	   (Lexing.lexeme lexbuf)
-	   (Lexing.lexeme_start lexbuf)
-	   (Lexing.lexeme_end lexbuf)) }
+    {
+      let (line, column) = Pos.num2pos (Lexing.lexeme_start lexbuf) in
+      failwith
+        (Printf.sprintf "unknown token %s in line %d, column %d."
+			(Lexing.lexeme lexbuf) line column)
+    }
+
 and comment = parse
 | "*)"
     { () }
 | "(*"
     { comment lexbuf;
       comment lexbuf }
+| newline { Pos.add_line lexbuf; comment lexbuf}
 | eof
     { Format.eprintf "warning: unterminated comment@." }
 | _

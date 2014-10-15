@@ -134,10 +134,12 @@ exp: /* ∞Ï»Ã§Œº∞ (caml2html: parser_exp) */
     %prec prec_app
     { Array($2, $3) }
 | error
-    { failwith
-	(Printf.sprintf "parse error near characters %d-%d"
-	   (Parsing.symbol_start ())
-	   (Parsing.symbol_end ())) }
+    { let (line, column) = Pos.num2pos (Parsing.symbol_start ())
+      in
+      failwith
+	
+	( Printf.sprintf "line %d, column %d : Parse error\n" line column)
+    }
 
 fundef:
 | IDENT formal_args EQUAL exp
