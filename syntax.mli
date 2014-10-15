@@ -24,7 +24,9 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+  | Pos of Pos.t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-val p : out_channel -> t -> unit
+val getexp : t -> t
+val p : out_channel -> t -> t
  

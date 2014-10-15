@@ -87,22 +87,25 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
 	    (fun y -> FDiv(x, y), Type.Float))
   | Syntax.Eq _ | Syntax.LE _ as cmp ->
       g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false)))
-  | Syntax.If(Syntax.Not(e1), e2, e3) -> g env (Syntax.If(e1, e3, e2)) (* notによる分岐を変換 (caml2html: knormal_not) *)
-  | Syntax.If(Syntax.Eq(e1, e2), e3, e4) ->
-      insert_let (g env e1)
-	(fun x -> insert_let (g env e2)
-	    (fun y ->
-	      let e3', t3 = g env e3 in
-	      let e4', t4 = g env e4 in
-	      IfEq(x, y, e3', e4'), t3))
-  | Syntax.If(Syntax.LE(e1, e2), e3, e4) ->
-      insert_let (g env e1)
-	(fun x -> insert_let (g env e2)
-	    (fun y ->
-	      let e3', t3 = g env e3 in
-	      let e4', t4 = g env e4 in
-	      IfLE(x, y, e3', e4'), t3))
-  | Syntax.If(e1, e2, e3) -> g env (Syntax.If(Syntax.Eq(e1, Syntax.Bool(false)), e3, e2)) (* 比較のない分岐を変換 (caml2html: knormal_if) *)
+  | Syntax.If(e1, e2,e3) -> 
+     let e1' = Syntax.getexp e1 in
+     (match Syntax.If(e1', e2, e3) with
+      | Syntax.If(Syntax.Not(e1''), e2', e3') -> g env (Syntax.If(e1'', e3', e2')) (* notによる分岐を変換 (caml2html: knormal_not) *)
+      | Syntax.If(Syntax.Eq(e1'', e2'), e3', e4') ->
+	 insert_let (g env e1'')
+		    (fun x -> insert_let (g env e2')
+					 (fun y ->
+					  let e3'', t3 = g env e3' in
+					  let e4'', t4 = g env e4' in
+					  IfEq(x, y, e3'', e4''), t3))
+      | Syntax.If(Syntax.LE(e1'', e2'), e3', e4') ->
+	 insert_let (g env e1'')
+		    (fun x -> insert_let (g env e2')
+					 (fun y ->
+					  let e3'', t3 = g env e3' in
+					  let e4'', t4 = g env e4' in
+					  IfLE(x, y, e3'', e4''), t3))
+      | _ -> g env (Syntax.If(Syntax.Eq(e1', Syntax.Bool(false)), e3, e2))) (* 比較のない分岐を変換 (caml2html: knormal_if) *)
   | Syntax.Let((x, t), e1, e2) ->
       let e1', t1 = g env e1 in
       let e2', t2 = g (M.add x t env) e2 in
@@ -117,28 +120,30 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
       let e2', t2 = g env' e2 in
       let e1', t1 = g (M.add_list yts env') e1 in
       LetRec({ name = (x, t); args = yts; body = e1' }, e2'), t2
-  | Syntax.App(Syntax.Var(f), e2s) when not (M.mem f env) -> (* 外部関数の呼び出し (caml2html: knormal_extfunapp) *)
-      (match M.find f !Typing.extenv with
-      | Type.Fun(_, t) ->
-	  let rec bind xs = function (* "xs" are identifiers for the arguments *)
-	    | [] -> ExtFunApp(f, xs), t
-	    | e2 :: e2s ->
-		insert_let (g env e2)
-		  (fun x -> bind (xs @ [x]) e2s) in
-	  bind [] e2s (* left-to-right evaluation *)
-      | _ -> assert false)
-  | Syntax.App(e1, e2s) ->
-      (match g env e1 with
-      | _, Type.Fun(_, t) as g_e1 ->
-	  insert_let g_e1
-	    (fun f ->
-	      let rec bind xs = function (* "xs" are identifiers for the arguments *)
+  | Syntax.App(e1, e2s) -> 
+     let e3 = Syntax.getexp e1 in
+     (match Syntax.App(e3, e2s)  with
+      | Syntax.App(Syntax.Var(f), e2s) when not (M.mem f env) -> (* 外部関数の呼び出し (caml2html: knormal_extfunapp) *)
+	 (match M.find f !Typing.extenv with
+	  | Type.Fun(_, t) ->
+	     let rec bind xs = function (* "xs" are identifiers for the arguments *)
+	       | [] -> ExtFunApp(f, xs), t
+	       | e2 :: e2s ->
+		  insert_let (g env e2)
+			     (fun x -> bind (xs @ [x]) e2s) in
+	     bind [] e2s (* left-to-right evaluation *)
+	  | _ -> assert false)
+      | _ -> (match g env e3 with
+	      | _, Type.Fun(_, t) as g_e1 ->
+		 insert_let g_e1
+			    (fun f ->
+			     let rec bind xs = function (* "xs" are identifiers for the arguments *)
 		| [] -> App(f, xs), t
 		| e2 :: e2s ->
-		    insert_let (g env e2)
-		      (fun x -> bind (xs @ [x]) e2s) in
-	      bind [] e2s) (* left-to-right evaluation *)
-      | _ -> assert false)
+		   insert_let (g env e2)
+			      (fun x -> bind (xs @ [x]) e2s) in
+			     bind [] e2s) (* left-to-right evaluation *)
+	      | _ -> assert false))
   | Syntax.Tuple(es) ->
       let rec bind xs ts = function (* "xs" and "ts" are identifiers and types for the elements *)
 	| [] -> Tuple(xs), Type.Tuple(ts)
@@ -175,17 +180,18 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
 	(fun x -> insert_let (g env e2)
 	    (fun y -> insert_let (g env e3)
 		(fun z -> Put(x, y, z), Type.Unit)))
+  | Syntax.Pos (_, e1) -> g env e1
 
 let f e = fst (g M.empty e)
 
-let rec intend oc =function
+let rec indent oc =function
   | 0 -> ()
-  | n -> Printf.fprintf oc "\t"; intend oc (n-1)
+  | n -> Printf.fprintf oc "  "; indent oc (n-1)
 
-let pid oc n s= intend oc n; Printf.fprintf oc "%s\n" s
+let pid oc n s= indent oc n; Printf.fprintf oc "ID %s\n" s
 let pname oc fdef =  let (s, t) = fdef.name in
 		     Printf.fprintf oc "NAME %s : " s; Type.p oc t; Printf.fprintf oc " \n"
-let pargs oc fdef =  Printf.fprintf oc "BODY "; 
+let pargs oc fdef =  Printf.fprintf oc "ARGS "; 
 		     List.iter (fun (x,y) -> Printf.fprintf oc " %s : " x; Type.p oc y) fdef.args; Printf.fprintf oc " \n"
 
 let p oc e = 
@@ -220,9 +226,9 @@ let p oc e =
 				 f (n+1) e1; f (n+1) e2
       | Var s -> Printf.fprintf oc "VAR %s\n" s
       | LetRec (fdef, s1) -> Printf.fprintf oc "LETREC\n";
-			     intend oc (n+1); pname oc fdef;
-			     intend oc (n+1); pname oc fdef;
-			     intend oc (n+1); Printf.fprintf oc "BODY\n"; f (n+2) fdef.body;
+			     indent oc (n+1); pname oc fdef;
+			     indent oc (n+1); pargs oc fdef;
+			     indent oc (n+1); Printf.fprintf oc "BODY\n"; f (n+2) fdef.body;
 			     f (n+1) s1
       | App (s1, l) -> Printf.fprintf oc "APP\n";  pid oc (n+1) s1; List.iter (pid oc (n+1)) l 
       | Tuple l ->  Printf.fprintf oc "TUPLE\n"; List.iter (pid oc (n+1)) l       
@@ -234,5 +240,5 @@ let p oc e =
       | ExtFunApp (s, l) ->  Printf.fprintf oc "EXTFUNAPP\n"; pid oc (n+1) s;
 			     List.iter (pid oc (n+1)) l
     in 
-    intend oc n; g n e'
-  in f 0 e
+    indent oc n; g n e'
+  in f 0 e; e

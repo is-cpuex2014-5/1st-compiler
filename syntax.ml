@@ -24,15 +24,20 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+  | Pos of Pos.t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
-let rec intend oc =function
+let  getexp = function  (*Pos(p, Pos(p',e)) won't appear*)
+    Pos(_, e) ->  e
+  | e -> e
+
+let rec indent oc =function
   | 0 -> ()
-  | n -> Printf.fprintf oc "\t"; intend oc (n-1)
+  | n -> Printf.fprintf oc "  "; indent oc (n-1)
 
 let pname oc fdef =  let (s, t) = fdef.name in
 		     Printf.fprintf oc "NAME %s : " s; Type.p oc t; Printf.fprintf oc " \n"
-let pargs oc fdef =  Printf.fprintf oc "BODY "; 
+let pargs oc fdef =  Printf.fprintf oc "ARGS "; 
 		     List.iter (fun (x,y) -> Printf.fprintf oc " %s : " x; Type.p oc y) fdef.args; Printf.fprintf oc " \n"
 
 let p oc e = 
@@ -59,9 +64,9 @@ let p oc e =
 				 f (n+1) e1; f (n+1) e2;
       | Var s -> Printf.fprintf oc "VAR %s\n" s
       | LetRec (fdef, e1) -> Printf.fprintf oc "LETREC\n";
-			     intend oc (n+1); pname oc fdef;
-			     intend oc (n+1); pname oc fdef;
-			     intend oc (n+1); Printf.fprintf oc "BODY\n"; f (n+2) fdef.body;
+			     indent oc (n+1); pname oc fdef;
+			     indent oc (n+1); pargs oc fdef;
+			     indent oc (n+1); Printf.fprintf oc "BODY\n"; f (n+2) fdef.body;
 			     f (n+1) e1
       | App (e1, l) -> Printf.fprintf oc "APP\n"; f (n+1) e1; List.iter (f (n+1)) l 
       | Tuple l ->  Printf.fprintf oc "TUPLE\n"; List.iter (f (n+1)) l       
@@ -70,6 +75,7 @@ let p oc e =
       | Array (e1, e2) -> Printf.fprintf oc "ARRAY\n"; f (n+1) e1; f (n+1) e2
       | Get (e1, e2) -> Printf.fprintf oc "GET\n"; f (n+1) e1; f (n+1) e2
       | Put (e1, e2, e3) ->  Printf.fprintf oc "PUT\n"; f (n+1) e1; f (n+1) e2; f (n+1) e3
+      | Pos (_, e1) -> g n e1
     in 
-    intend oc n; g n e'
-  in f 0 e
+    indent oc n; g n e'
+  in f 0 e; e

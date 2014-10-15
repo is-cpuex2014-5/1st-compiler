@@ -2,6 +2,20 @@
 (* parserが利用する変数、関数、型などの定義 *)
 open Syntax
 let addtyp x = (x, Type.gentyp ())
+let addpos e =  (*TODO: add file name*)
+  let spos = Parsing.symbol_start () in
+  let epos = Parsing.symbol_end () in
+  let (slnum, scnum) = Pos.convert spos in
+  let (elnum, ecnum) = Pos.convert epos in 
+  let p = {
+    Pos.fname = "";
+    Pos.slnum = slnum;
+    Pos.scnum = scnum;
+    Pos.elnum = elnum;
+    Pos.ecnum = ecnum;
+  } in
+  Pos (p, e)
+  
 %}
 
 /* 字句を表すデータ型の定義 (caml2html: parser_token) */
@@ -74,67 +88,67 @@ simple_exp: /* 括弧をつけなくても関数の引数になれる式 (caml2html: parser_simple)
 
 exp: /* 一般の式 (caml2html: parser_exp) */
 | simple_exp
-    { $1 }
+    { addpos $1 }
 | NOT exp
     %prec prec_app
-    { Not($2) }
+    { addpos (Not($2)) }
 | MINUS exp
     %prec prec_unary_minus
-    { match $2 with
-    | Float(f) -> Float(-.f) (* -1.23などは型エラーではないので別扱い *)
-    | e -> Neg(e) }
+    { addpos (match (getexp $2) with
+	      | Float(f) -> (Float(-.f)) (* -1.23などは型エラーではないので別扱い *)
+	      | e -> (Neg(e))) }
 | exp PLUS exp /* 足し算を構文解析するルール (caml2html: parser_add) */
-    { Add($1, $3) }
+    { addpos (Add($1, $3)) }
 | exp MINUS exp
-    { Sub($1, $3) }
+    { addpos (Sub($1, $3)) }
 | exp EQUAL exp
-    { Eq($1, $3) }
+    { addpos (Eq($1, $3)) }
 | exp LESS_GREATER exp
-    { Not(Eq($1, $3)) }
+    { addpos (Not(Eq($1, $3))) }
 | exp LESS exp
-    { Not(LE($3, $1)) }
+    { addpos (Not(LE($3, $1))) }
 | exp GREATER exp
-    { Not(LE($1, $3)) }
+    { addpos (Not(LE($1, $3))) }
 | exp LESS_EQUAL exp
-    { LE($1, $3) }
+    { addpos (LE($1, $3)) }
 | exp GREATER_EQUAL exp
-    { LE($3, $1) }
+    { addpos (LE($3, $1)) }
 | IF exp THEN exp ELSE exp
     %prec prec_if
-    { If($2, $4, $6) }
+    { addpos (If($2, $4, $6)) }
 | MINUS_DOT exp
     %prec prec_unary_minus
-    { FNeg($2) }
+    { addpos (FNeg($2)) }
 | exp PLUS_DOT exp
-    { FAdd($1, $3) }
+    { addpos (FAdd($1, $3)) }
 | exp MINUS_DOT exp
-    { FSub($1, $3) }
+    { addpos (FSub($1, $3)) }
 | exp AST_DOT exp
-    { FMul($1, $3) }
+    { addpos (FMul($1, $3)) }
 | exp SLASH_DOT exp
-    { FDiv($1, $3) }
+    { addpos (FDiv($1, $3)) }
 | LET IDENT EQUAL exp IN exp
     %prec prec_let
-    { Let(addtyp $2, $4, $6) }
+    { addpos (Let(addtyp $2, $4, $6)) }
 | LET REC fundef IN exp
     %prec prec_let
-    { LetRec($3, $5) }
+    { addpos (LetRec($3, $5)) }
 | exp actual_args
     %prec prec_app
-    { App($1, $2) }
+    { addpos (App($1, $2)) }
 | elems
-    { Tuple($1) }
+    { addpos (Tuple($1)) }
 | LET LPAREN pat RPAREN EQUAL exp IN exp
-    { LetTuple($3, $6, $8) }
+    { addpos (LetTuple($3, $6, $8)) }
 | simple_exp DOT LPAREN exp RPAREN LESS_MINUS exp
-    { Put($1, $4, $7) }
+    { addpos (Put($1, $4, $7)) }
 | exp SEMICOLON exp
-    { Let((Id.gentmp Type.Unit, Type.Unit), $1, $3) }
+    { addpos (Let((Id.gentmp Type.Unit, Type.Unit), $1, $3)) }
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
-    { Array($2, $3) }
+    { addpos (Array($2, $3)) }
 | error
-    { let (line, column) = Pos.num2pos (Parsing.symbol_start ())
+    { let (line, column) = Pos.convert (Parsing.symbol_start ())
       in
       failwith
 	

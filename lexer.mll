@@ -86,7 +86,7 @@ rule token = parse
     { IDENT(Lexing.lexeme lexbuf) }
 | _
     {
-      let (line, column) = Pos.num2pos (Lexing.lexeme_start lexbuf) in
+      let (line, column) = Pos.convert (Lexing.lexeme_start lexbuf) in
       failwith
         (Printf.sprintf "unknown token %s in line %d, column %d."
 			(Lexing.lexeme lexbuf) line column)

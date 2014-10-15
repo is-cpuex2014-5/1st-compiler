@@ -8,7 +8,8 @@ type t = {
 
 let line_buf = ref [0] (*the number of the characters in the end of the line will be added*)
 
-let num2pos n =
+(*int -> (int, int)*)
+let convert n =
     let xs = List.filter (fun x -> x <= n) !line_buf in
       (List.length xs, n - List.hd xs + 1)
 
