@@ -31,7 +31,7 @@ let reg r = (*$を消す作業*)
 
 let load_label r label =
   "\tlis\t" ^ ((*reg*) r) ^ ", ha16(" ^ label ^ ")\n" ^
-  "\taddi\t" ^ ((*reg*) r) ^ ", " ^ ((*reg*) r) ^ ", lo16(" ^ label ^ ")\n"
+    "\taddi\t" ^ ((*reg*) r) ^ ", " ^ ((*reg*) r) ^ ", lo16(" ^ label ^ ")\n"
 
 (* 関数呼び出しのために引数を並べ替える (register shuffling) *)
 let rec shuffle sw xys = 
@@ -64,7 +64,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	Printf.fprintf oc "\tori\t%s, %s, %d\n" r r m
   | (NonTail(x), FLi(Id.L(l))) ->
       let s = load_label reg_tmp l in
-      Printf.fprintf oc "%s\tlfd\t%s, %s, 0\n" s ((*reg*) x) reg_tmp
+      Printf.fprintf oc "%s\tfload\t%s, %s, 0\n" s ((*reg*) x) reg_tmp
   | (NonTail(x), SetL(Id.L(y))) -> 
       let s = load_label x y in
       Printf.fprintf oc "%s" s
@@ -320,13 +320,14 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 let f oc (Prog(data, fundefs, e)) = (*TODO: main周り以外のアセンブリの成型*)
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
-    (Printf.fprintf oc "\t.data\n\t.literal8\n";
+    (Printf.fprintf oc "\t.data\n";
+     (*Printf.fprintf oc "\t.literal8\n";*)
      List.iter
        (fun (Id.L(x), d) ->
 	 Printf.fprintf oc "\t.align 3\n";
-	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%ld\n" (gethi d);
-	 Printf.fprintf oc "\t.long\t%ld\n" (getlo d))
+	 Printf.fprintf oc "%s:\n" x;
+	 Printf.fprintf oc "\t.float\t%f\n" d;
+	 (*Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
        data));
   Printf.fprintf oc "\t.text\n";
   Printf.fprintf oc "\t.globl  _min_caml_start\n";
