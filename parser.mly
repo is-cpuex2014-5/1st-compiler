@@ -3,16 +3,14 @@
 open Syntax
 let addtyp x = (x, Type.gentyp ())
 let addpos e =  (*TODO: add file name*)
-  let spos = Parsing.symbol_start () in
-  let epos = Parsing.symbol_end () in
-  let (slnum, scnum) = Pos.convert spos in
-  let (elnum, ecnum) = Pos.convert epos in 
+  let snum = Parsing.symbol_start () in
+  let enum = Parsing.symbol_end () in
+  let spos = Pos.convert snum in
+  let epos = Pos.convert enum in 
   let p = {
     Pos.fname = "";
-    Pos.slnum = slnum;
-    Pos.scnum = scnum;
-    Pos.elnum = elnum;
-    Pos.ecnum = ecnum;
+    Pos.spos = spos;
+    Pos.epos = epos;
   } in
   Pos (p, e)
   

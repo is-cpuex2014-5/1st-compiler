@@ -1,9 +1,7 @@
 type t = { 
   fname : string; (*file name*)
-  slnum : int;    (*start of the line*)
-  scnum : int;    (*start of the column*)
-  elnum : int;    (*end of the line*)
-  ecnum : int;    (*end of the column*)
+  spos  : int * int;    (*start (line, column)*)
+  epos  : int * int;    (*end (line, column)*)
 }
 
 let line_buf = ref [0] (*the number of the characters in the end of the line will be added*)
@@ -14,10 +12,10 @@ let convert n =
       (List.length xs, n - List.hd xs + 1)
 
 let sprint  = function 
-    p when p.slnum == p.elnum -> 
-	   Printf.sprintf "file: %s, line: %d, column: %d to %d\n" p.fname p.slnum p.scnum p.ecnum
+    p when (fst p.spos) == (fst p.epos) -> 
+	   Printf.sprintf "file: %s, line: %d, column: %d to %d\n" p.fname (fst p.spos) (snd p.spos) (snd p.epos)
   | p -> 
-     Printf.sprintf "file: %s, line: %d to %d, column: %d to %d\n" p.fname p.slnum p.elnum p.scnum p.ecnum
+     Printf.sprintf "file: %s, line: %d to %d, column: %d to %d\n" p.fname (fst p.spos) (fst p.epos) (snd p.spos) (snd p.epos)
 		     
 let add_line lexbuf = line_buf := Lexing.lexeme_end lexbuf :: !line_buf
 
