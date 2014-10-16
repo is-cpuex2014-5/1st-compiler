@@ -1,8 +1,12 @@
 YFLAGS = -v 
 RESULT  = min-caml
-SOURCES = m.ml s.ml id.ml type.ml pos.ml syntax.ml lexer.mll parser.mly  typing.ml    \
-          kNormal.ml alpha.ml beta.ml assoc.ml inline.ml constFold.ml elim.ml \
-          closure.ml asm.ml virtual.ml simm.ml regAlloc.ml emit.ml main.ml \
+SOURCES = m.ml s.ml id.ml type.ml pos.mli pos.ml syntax.mli syntax.ml \
+	  lexer.mll parser.mly  typing.mli typing.ml \
+          kNormal.mli kNormal.ml alpha.mli alpha.ml beta.mli beta.ml \
+	  assoc.mli assoc.ml inline.mli inline.ml constFold.mli \
+ 	  constFold.ml elim.mli elim.ml closure.mli closure.ml \
+	  asm.mli asm.ml  virtual.mli virtual.ml simm.mli simm.ml \
+	  regAlloc.mli  regAlloc.ml emit.mli emit.ml main.mli main.ml \
 	  float.c
 all: native-code
 
