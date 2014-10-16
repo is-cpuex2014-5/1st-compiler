@@ -6,6 +6,7 @@ exception Unify of Type.t * Type.t
 exception Error of t * Type.t * Type.t
 
 let extenv = ref M.empty
+let errorpos = ref Pos.init
 
 (* for pretty printing (and type normalization) *)
 let rec deref_typ = function (* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
@@ -149,8 +150,10 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 	unify (Type.Array(t)) (g env e1);
 	unify Type.Int (g env e2);
 	Type.Unit
-    | Pos(p, e1) -> g env e1
-  with Unify(t1, t2) -> raise (Error(deref_term e, deref_typ t1, deref_typ t2))
+    | Pos(p, e1) ->errorpos := p ; g env e1
+  with Unify(t1, t2) -> failwith ("Type error : conflict between " ^ (Type.sprint t1) ^ " and " ^ (Type.sprint t2)  ^
+				    ". " ^ (Pos.sprint !errorpos))
+(*raise (Error(deref_term e, deref_typ t1, deref_typ t2))*)
 
 let f e =
   extenv := M.empty;

@@ -4,6 +4,7 @@ type t = {
   epos  : int * int;    (*end (line, column)*)
 }
 
+val init : t
 val convert : int -> int * int
 val sprint : t -> string
 val add_line : Lexing.lexbuf -> unit
