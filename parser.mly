@@ -25,6 +25,8 @@ let addpos e =  (*TODO: add file name*)
 %token PLUS
 %token MINUS_DOT
 %token PLUS_DOT
+%token AST 
+%token SLASH
 %token AST_DOT
 %token SLASH_DOT
 %token EQUAL
@@ -57,7 +59,7 @@ let addpos e =  (*TODO: add file name*)
 %left COMMA
 %left EQUAL LESS_GREATER LESS GREATER LESS_EQUAL GREATER_EQUAL
 %left PLUS MINUS PLUS_DOT MINUS_DOT
-%left AST_DOT SLASH_DOT
+%left AST SLASH AST_DOT SLASH_DOT
 %right prec_unary_minus
 %left prec_app
 %left DOT
@@ -121,6 +123,10 @@ exp: /* ∞Ï»Ã§Œº∞ (caml2html: parser_exp) */
     { addpos (FAdd($1, $3)) }
 | exp MINUS_DOT exp
     { addpos (FSub($1, $3)) }
+| exp AST exp
+    { addpos (App (Var "mul", [$1; $3])) }
+| exp SLASH exp
+    { addpos (App (Var "div", [$1; $3])) }
 | exp AST_DOT exp
     { addpos (FMul($1, $3)) }
 | exp SLASH_DOT exp

@@ -40,6 +40,10 @@ rule token = parse
     { MINUS_DOT }
 | "+."
     { PLUS_DOT }
+| "*"
+    { AST }
+| "/"
+    { SLASH }
 | "*."
     { AST_DOT }
 | "/."
