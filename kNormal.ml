@@ -23,11 +23,12 @@ type t = (* K正規化後の式 (caml2html: knormal_t) *)
   | Get of Id.t * Id.t
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
+  | ExtTuple of Id.t
   | ExtFunApp of Id.t * Id.t list
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec fv = function (* 式に出現する（自由な）変数 (caml2html: knormal_fv) *)
-  | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
+  | Unit | Int(_) | Float(_) | ExtArray(_) | ExtTuple(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -111,10 +112,11 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
       let e2', t2 = g (M.add x t env) e2 in
       Let((x, t), e1', e2'), t2
   | Syntax.Var(x) when M.mem x env -> Var(x), M.find x env
-  | Syntax.Var(x) -> (* 外部配列の参照 (caml2html: knormal_extarray) *)
+  | Syntax.Var(x) -> (* 外部配列及び外部タプルの参照 (caml2html: knormal_extarray) *)
       (match M.find x !Typing.extenv with
       | Type.Array(_) as t -> ExtArray x, t
-      | _ -> failwith (Printf.sprintf "external variable %s does not have an array type" x))
+      | Type.Tuple(_) as t -> ExtTuple x, t
+      | t' -> failwith (Printf.sprintf "external variable %s does not have an array type but type %s" x (Type.sprint t')))
   | Syntax.LetRec({ Syntax.name = (x, t); Syntax.args = yts; Syntax.body = e1 }, e2) ->
       let env' = M.add x t env in
       let e2', t2 = g env' e2 in
@@ -237,6 +239,7 @@ let p oc e =
       | Get (s1, s2) -> Printf.fprintf oc "GET\n"; pid oc (n+1) s1; pid oc (n+1) s2
       | Put (s1, s2, s3) ->  Printf.fprintf oc "PUT\n"; pid oc (n+1) s1; pid oc (n+1) s2; pid oc (n+1) s3
       | ExtArray s ->  Printf.fprintf oc "EXTARRAY\n"; pid oc (n+1) s
+      | ExtTuple s ->  Printf.fprintf oc "EXTTUPLE\n"; pid oc (n+1) s 					   
       | ExtFunApp (s, l) ->  Printf.fprintf oc "EXTFUNAPP\n"; pid oc (n+1) s;
 			     List.iter (pid oc (n+1)) l
     in 
