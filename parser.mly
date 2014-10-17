@@ -148,6 +148,8 @@ exp: /* ∞Ï»Ã§Œº∞ (caml2html: parser_exp) */
     { addpos (Put($1, $4, $7)) }
 | exp SEMICOLON exp
     { addpos (Let((Id.gentmp Type.Unit, Type.Unit), $1, $3)) }
+| exp SEMICOLON 
+    { addpos (Let((Id.gentmp Type.Unit, Type.Unit), $1, Unit)) }
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { addpos (Array($2, $3)) }

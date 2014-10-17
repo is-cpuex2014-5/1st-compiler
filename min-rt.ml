@@ -11,8 +11,8 @@
 
 (*NOMINCAML open MiniMLRuntime;;*)
 (*NOMINCAML open Globals;;*)
-(*MINCAML*) (*let true = 1 in 
-(*MINCAML*) let false = 0 in*) (*changed*) 
+(*(*MINCAML*) let true = 1 in 
+(*MINCAML*) let false = 0 in *)
 (*MINCAML*) let rec xor x y = if x then not y else y in
 
 (******************************************************************************
@@ -1386,7 +1386,7 @@ let rec solve_each_element_fast iand_ofs and_group dirvec =
 		tmin.(0) <- t;
 		vecset intersection_point q0 q1 q2;
 		intersected_object_id.(0) <- iobj;
-		intsec_rectside.(0) <- t0 (*changed*)
+		intsec_rectside.(0) <- t0;
 	       )
 	    else ()
 	   )
@@ -1665,7 +1665,7 @@ let rec trace_ray nref energy dirvec pixel dist =
 	veccpy energya.(nref) texture_color;
 	vecscale energya.(nref) ((1.0 /. 256.0) *. diffuse);
 	let nvectors = p_nvectors pixel in
-	veccpy nvectors.(nref) nvector (*changed*)
+	veccpy nvectors.(nref) nvector;
        );
 
       let w = (-2.0) *. veciprod dirvec nvector in
@@ -1695,9 +1695,9 @@ let rec trace_ray nref energy dirvec pixel dist =
 	if m_surface = 2 then (   (* 完全鏡面反射 *)
 	  let energy2 = energy *. (1.0 -. o_diffuse obj) in
 	  trace_ray (nref+1) energy2 dirvec pixel (dist +. tmin.(0))
-	 ) else ()(*changed*)
+	 ) else ();
 	
-      ) else ()
+       ) else ()
       
      ) else ( 
       (* どの物体にも当たらなかった場合。光源からの光を加味 *)
@@ -2054,7 +2054,7 @@ let rec scan_line y prev cur next group_id = (
       pretrace_line next (y + 1) group_id
     else ();
     scan_pixel 0 y prev cur next;
-    scan_line (y + 1) cur next prev (add_mod5 group_id 2)(*changed*)
+    scan_line (y + 1) cur next prev (add_mod5 group_id 2);
    ) else ()      
 )
 in
