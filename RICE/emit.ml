@@ -30,8 +30,9 @@ let reg r = (*$を消す作業*)
   else r 
 
 let load_label r label =
-  "\tlis\t" ^ ((*reg*) r) ^ ", ha16(" ^ label ^ ")\n" ^
-    "\taddi\t" ^ ((*reg*) r) ^ ", " ^ ((*reg*) r) ^ ", lo16(" ^ label ^ ")\n"
+  "\tli\t" ^ (r) ^ ", " ^ label ^ "\n"
+  (*"\tlis\t" ^ ((*reg*) r) ^ ", ha16(" ^ label ^ ")\n" ^
+    "\taddi\t" ^ ((*reg*) r) ^ ", " ^ ((*reg*) r) ^ ", lo16(" ^ label ^ ")\n"*)
 
 (* 関数呼び出しのために引数を並べ替える (register shuffling) *)
 let rec shuffle sw xys = 
@@ -74,7 +75,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), Add(y, V(z))) -> 
       Printf.fprintf oc "\tadd\t%s, %s, %s, 0\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
  | (NonTail(x), Add(y, C(z))) -> 
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z 
+      Printf.fprintf oc "\taddil\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z 
   | (NonTail(x), Sub(y, V(z))) -> 
       Printf.fprintf oc "\tsub\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
  | (NonTail(x), Sub(y, C(z))) -> 
@@ -226,10 +227,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
 	Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
-	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, 0\n" reg_tmp ((*reg*) reg_cl);
 	Printf.fprintf oc "\tmov\t%s, %s\n" cnt_reg reg_tmp ;
-	Printf.fprintf oc "\taddi\t%s, %s, 4\n\tstore\t%s, %s, -4\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*TODO: beqでいいのか？,その他の部分も少し怪しい？*)
+	Printf.fprintf oc "\taddil\t%s, %s, 4\n\tstore\t%s, %s, -4\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*TODO: beqでいいのか？,その他の部分も少し怪しい？*)
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
 	(if List.mem a allregs && a <> regs.(0) then 
@@ -242,7 +243,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_args oc [] ys zs;
       let ss = stacksize () in
 	Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
-	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tcall\t%s\n" x;
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
@@ -253,7 +254,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	Printf.fprintf oc "\tstore\t%s, %s, -4\n" reg_tmp reg_sp
 and g'_tail_if oc e1 e2 b bn x y = 
   let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y b_else;
+    Printf.fprintf oc "\t%si\t%s, %s, %s\n" bn x y b_else;
     let stackset_back = !stackset in
       g oc (Tail, e1);
       Printf.fprintf oc "%s:\n" b_else;
@@ -261,7 +262,7 @@ and g'_tail_if oc e1 e2 b bn x y =
       g oc (Tail, e2)
 and g'_tail_if_imm oc e1 e2 b bn x y = 
   let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%s\t%s, %d, %s\n" bn x y b_else;
+    Printf.fprintf oc "\t%si\t%s, %d, %s\n" bn x y b_else;
     let stackset_back = !stackset in
       g oc (Tail, e1);
       Printf.fprintf oc "%s:\n" b_else;
@@ -324,28 +325,27 @@ let f oc (Prog(data, fundefs, e)) = (*TODO: main周り以外のアセンブリの成型*)
      (*Printf.fprintf oc "\t.literal8\n";*)
      List.iter
        (fun (Id.L(x), d) ->
-	 Printf.fprintf oc "\t.align 3\n";
 	 Printf.fprintf oc "%s:\n" x;
 	 Printf.fprintf oc "\t.float\t%f\n" d;
 	 (*Printf.fprintf oc "\t.long\t%ld\n" (getlo d)*))
        data));
   Printf.fprintf oc "\t.text\n";
-  Printf.fprintf oc "\t.globl  _min_caml_start\n";
-  Printf.fprintf oc "\t.align 2\n";
+  Printf.fprintf oc "\t.globl  main\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
-  Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\tmflr\tr0\n"; (*TODO: リンクレジスタの設定*)
+  Printf.fprintf oc "main: # main entry point\n";
+ (* Printf.fprintf oc "\tmflr\tr0\n"; (*TODO: リンクレジスタの設定*)
   Printf.fprintf oc "\tstmw\tr30, -8(r1)\n"; (*TODO: stmw に変わる命令*)
   Printf.fprintf oc "\tstw\tr0, 8(r1)\n";
-  Printf.fprintf oc "\tstwu\tr1, -96(r1)\n";
+  Printf.fprintf oc "\tstwu\tr1, -96(r1)\n";*)
   Printf.fprintf oc "   # main program start\n";
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail("_R_0"), e);
   Printf.fprintf oc "   # main program end\n";
+  Printf.fprintf oc "\tbeq\t$r00, $r00, $r15, 0\n"
 (*  Printf.fprintf oc "\tmr\tr3, %s\n" regs.(0); *)
-  Printf.fprintf oc "\tlwz\tr1, 0(r1)\n";
+ (* Printf.fprintf oc "\tlwz\tr1, 0(r1)\n";
   Printf.fprintf oc "\tlwz\tr0, 8(r1)\n";
   Printf.fprintf oc "\tmtlr\tr0\n";
   Printf.fprintf oc "\tlmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tblr\n"
+  Printf.fprintf oc "\tblr\n"*)
