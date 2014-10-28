@@ -33,7 +33,7 @@ and g' env = function (* 各命令の即値最適化 *)
   | FStore(x, y, V(z)) when M.mem z env && le17bit (M.find z env) -> FStore(x, y, C(M.find z env))
   | IfEq(x, V(y), e1, e2) when M.mem y env -> 
       IfEq(x, C(M.find y env), g env e1, g env e2)
-  | IfLE(x, V(y), e1, e2) when M.mem y env ->
+  (*| IfLE(x, V(y), e1, e2) when M.mem y env ->
       IfLE(x, C(M.find y env), g env e1, g env e2)
   | IfGE(x, V(y), e1, e2) when M.mem y env -> 
       IfGE(x, C(M.find y env), g env e1, g env e2)
@@ -42,12 +42,11 @@ and g' env = function (* 各命令の即値最適化 *)
   | IfLE(x, V(y), e1, e2) when M.mem x env -> 
       IfGE(y, C(M.find x env), g env e1, g env e2)
   | IfGE(x, V(y), e1, e2) when M.mem x env -> 
-      IfLE(y, C(M.find x env), g env e1, g env e2)
+      IfLE(y, C(M.find x env), g env e1, g env e2)*)
   | IfEq(x, y', e1, e2) -> IfEq(x, y', g env e1, g env e2)
-  | IfLE(x, y', e1, e2) -> IfLE(x, y', g env e1, g env e2)
-  | IfGE(x, y', e1, e2) -> IfGE(x, y', g env e1, g env e2)
+  | IfLT(x, y', e1, e2) -> IfLT(x, y', g env e1, g env e2)
   | IfFEq(x, y, e1, e2) -> IfFEq(x, y, g env e1, g env e2)
-  | IfFLE(x, y, e1, e2) -> IfFLE(x, y, g env e1, g env e2)
+  | IfFLT(x, y, e1, e2) -> IfFLT(x, y, g env e1, g env e2)
   | e -> e
 
 (* トップレベル関数の即値最適化 *)

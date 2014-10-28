@@ -172,56 +172,56 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
  | (Tail, IfEq(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
       g'_tail_if_imm oc e1 e2 "beq" "bne" x y
-  | (Tail, IfLE(x, V(y), e1, e2)) ->
+  | (Tail, IfLT(x, V(y), e1, e2)) ->
      (* Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_tail_if oc e1 e2 "ble" "bgt" x y
-  | (Tail, IfLE(x, C(y), e1, e2)) ->
+      g'_tail_if oc e1 e2 "blt" "bge" x y
+  | (Tail, IfLT(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
-      g'_tail_if_imm oc e1 e2 "ble" "bgt" x y
-  | (Tail, IfGE(x, V(y), e1, e2)) ->
+      g'_tail_if_imm oc e1 e2 "blt" "bge" x y
+  (*| (Tail, IfGE(x, V(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_tail_if oc e1 e2 "bge" "blt" x y
   | (Tail, IfGE(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
-      g'_tail_if_imm oc e1 e2 "bge" "blt" x y
+      g'_tail_if_imm oc e1 e2 "bge" "blt" x y *)
   | (Tail, IfFEq(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_tail_if oc e1 e2 "beq" "bne" x y
-  | (Tail, IfFLE(x, y, e1, e2)) ->
+  | (Tail, IfFLT(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_tail_if oc e1 e2 "ble" "bgt" x y
+      g'_tail_if oc e1 e2 "blt" "bge" x y
   | (NonTail(z), IfEq(x, V(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne" x y
   | (NonTail(z), IfEq(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
       g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "beq" "bne" x y
-  | (NonTail(z), IfLE(x, V(y), e1, e2)) ->
+  | (NonTail(z), IfLT(x, V(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt" x y
-  | (NonTail(z), IfLE(x, C(y), e1, e2)) ->
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "blt" "bge" x y
+  | (NonTail(z), IfLT(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
-      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "ble" "bgt" x y
-  | (NonTail(z), IfGE(x, V(y), e1, e2)) ->
+      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "blt" "bge" x y
+ (* | (NonTail(z), IfGE(x, V(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_non_tail_if oc (NonTail(z)) e1 e2 "bge" "blt" x y
   | (NonTail(z), IfGE(x, C(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
-      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "bge" "blt" x y  
+      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "bge" "blt" x y  *)
   | (NonTail(z), IfFEq(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne" x y
-  | (NonTail(z), IfFLE(x, y, e1, e2)) ->
+  | (NonTail(z), IfFLT(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt" x y
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "blt" "bge" x y
   (* 関数呼び出しの仮想命令の実装 *)
   | (Tail, CallCls(x, ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [(x, reg_cl)] ys zs;
       Printf.fprintf oc "\tload\t%s, %s, 0\n" ((*reg*) reg_sw) ((*reg*) reg_cl);
-      Printf.fprintf oc "\tmov\t%s, %s\n\tbeq\t$r0, $r0, %s\n" cnt_reg ((*reg*) reg_sw) cnt_reg; (*TODO: beqでいいのか？絶対アドレスで飛べないのかな*)
+      Printf.fprintf oc "\tmov\t%s, %s\n\tbeqi\t$r0, $r0, %s\n" cnt_reg ((*reg*) reg_sw) cnt_reg; 
   | (Tail, CallDir(Id.L(x), ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
-      Printf.fprintf oc "\tb\t%s\n" x
+      Printf.fprintf oc "\tbeqi\t $r00, $r00, %s\n" x
   | (NonTail(a), CallCls(x, ys, zs)) ->
       Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
       g'_args oc [(x, reg_cl)] ys zs;
@@ -253,46 +253,46 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	   Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
 	Printf.fprintf oc "\tstore\t%s, %s, -4\n" reg_tmp reg_sp
 and g'_tail_if oc e1 e2 b bn x y = 
-  let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%si\t%s, %s, %s\n" bn x y b_else;
+  let b_else = Id.genid (bn ^ "_else") in
+    Printf.fprintf oc "\t%si\t%s, %s, %s\n" b x y b_else;
     let stackset_back = !stackset in
-      g oc (Tail, e1);
+      g oc (Tail, e2);
       Printf.fprintf oc "%s:\n" b_else;
       stackset := stackset_back;
-      g oc (Tail, e2)
-and g'_tail_if_imm oc e1 e2 b bn x y = 
-  let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%si\t%s, %d, %s\n" bn x y b_else;
+      g oc (Tail, e1)
+and g'_tail_if_imm oc e1 e2 b bn x y =  (*TODO : delete this code*)
+  let b_else = Id.genid (bn ^ "_else") in
+    Printf.fprintf oc "\t%si\t%s, %d, %s\n" b x y b_else;
     let stackset_back = !stackset in
-      g oc (Tail, e1);
+      g oc (Tail, e2);
       Printf.fprintf oc "%s:\n" b_else;
       stackset := stackset_back;
-      g oc (Tail, e2)
+      g oc (Tail, e1)
 and g'_non_tail_if oc dest e1 e2 b bn x y = 
-  let b_else = Id.genid (b ^ "_else") in
-  let b_cont = Id.genid (b ^ "_cont") in
-    Printf.fprintf oc "\t%s\t%s, %s, %s\n" bn x y  b_else;
+  let b_else = Id.genid (bn ^ "_else") in
+  let b_cont = Id.genid (bn ^ "_cont") in
+    Printf.fprintf oc "\t%s\t%s, %s, %s\n" b x y b_else;
     let stackset_back = !stackset in
-      g oc (dest, e1);
+      g oc (dest, e2);
       let stackset1 = !stackset in
-	Printf.fprintf oc "\tb\t%s\n" b_cont;
+	Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
 	Printf.fprintf oc "%s:\n" b_else;
 	stackset := stackset_back;
-	g oc (dest, e2);
+	g oc (dest, e1);
 	Printf.fprintf oc "%s:\n" b_cont;
 	let stackset2 = !stackset in
 	  stackset := S.inter stackset1 stackset2
-and g'_non_tail_if_imm oc dest e1 e2 b bn x y = 
-  let b_else = Id.genid (b ^ "_else") in
-  let b_cont = Id.genid (b ^ "_cont") in
-    Printf.fprintf oc "\t%s\t%s, %d, %s\n" bn x y  b_else;
+and g'_non_tail_if_imm oc dest e1 e2 b bn x y = (*TODO : delete this code*)
+  let b_else = Id.genid (bn ^ "_else") in
+  let b_cont = Id.genid (bn ^ "_cont") in
+    Printf.fprintf oc "\t%s\t%s, %d, %s\n" b x y b_else;
     let stackset_back = !stackset in
-      g oc (dest, e1);
+      g oc (dest, e2);
       let stackset1 = !stackset in
-	Printf.fprintf oc "\tb\t%s\n" b_cont;
+	Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
 	Printf.fprintf oc "%s:\n" b_else;
 	stackset := stackset_back;
-	g oc (dest, e2);
+	g oc (dest, e1);
 	Printf.fprintf oc "%s:\n" b_cont;
 	let stackset2 = !stackset in
 	  stackset := S.inter stackset1 stackset2

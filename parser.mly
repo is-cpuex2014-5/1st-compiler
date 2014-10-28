@@ -106,13 +106,13 @@ exp: /* ∞Ï»Ã§Œº∞ (caml2html: parser_exp) */
 | exp LESS_GREATER exp
     { addpos (Not(Eq($1, $3))) }
 | exp LESS exp
-    { addpos (Not(LE($3, $1))) }
+    { addpos (LT($1, $3)) }
 | exp GREATER exp
-    { addpos (Not(LE($1, $3))) }
+    { addpos (LT($3, $1)) }
 | exp LESS_EQUAL exp
-    { addpos (LE($1, $3)) }
+    { addpos (Not (LT($3, $1))) }
 | exp GREATER_EQUAL exp
-    { addpos (LE($3, $1)) }
+    { addpos (Not (LT($1, $3))) }
 | IF exp THEN exp ELSE exp
     %prec prec_if
     { addpos (If($2, $4, $6)) }

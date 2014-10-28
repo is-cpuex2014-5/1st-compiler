@@ -13,7 +13,7 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | FMul of t * t
   | FDiv of t * t
   | Eq of t * t
-  | LE of t * t
+  | LT of t * t
   | If of t * t * t
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
@@ -58,7 +58,7 @@ let p oc e =
       | FMul (e1, e2) -> Printf.fprintf oc "FMUL\n"; f (n+1) e1; f (n+1) e2
       | FDiv (e1, e2) -> Printf.fprintf oc "FDIV\n"; f (n+1) e1; f (n+1) e2
       | Eq (e1, e2) -> Printf.fprintf oc "EQ\n"; f (n+1) e1; f (n+1) e2
-      | LE (e1, e2) -> Printf.fprintf oc "LE\n"; f (n+1) e1; f (n+1) e2
+      | LT (e1, e2) -> Printf.fprintf oc "LT\n"; f (n+1) e1; f (n+1) e2
       | If (e1, e2, e3) ->  Printf.fprintf oc "IF\n"; f (n+1) e1; f (n+1) e2; f (n+1) e3
       | Let ((s, t), e1, e2) ->  Printf.fprintf oc "LET %s : " s; Type.p oc t; Printf.fprintf oc " \n";
 				 f (n+1) e1; f (n+1) e2;
