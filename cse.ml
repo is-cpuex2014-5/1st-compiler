@@ -10,18 +10,18 @@ module KM = (*Map : KNormal.t -> 'a *)
     end)
 
 let rec has_side_effect = function (*Only an approximation*)
-  | Let (_, e1, e2) | IfEq (_, _, e1, e2) | IfLE (_, _, e1, e2) -> has_side_effect e1 || has_side_effect e2
+  | Let (_, e1, e2) | IfEq (_, _, e1, e2) | IfLT (_, _, e1, e2) -> has_side_effect e1 || has_side_effect e2
   | LetRec (_, e) | LetTuple (_, _, e) -> has_side_effect e
   | App _ | Put _ | ExtFunApp _ -> true
   | _ -> false
 
-let rec remove_get = function
+let rec remove_get = function 
   | env when KM.is_empty env -> env
   | env -> match KM.min_binding env with
       | (Get _ as e, _) -> remove_get (KM.remove e env)
       | _ -> env
 
-let add_get env = function 
+let add_get env = function (*Strictly speaking, this is not a cse but this optimizes the code*)
   | Put(x, y, z) -> KM.add (Get (x, y)) z env
   | _ -> env
 
@@ -33,21 +33,27 @@ let rec g env = function
   | Let((x, t), e1, e2) -> 
      let e1' = g env e1 in
      let env' = if has_side_effect e1'
-		then remove_get env 
+		then remove_get env (*Removing get from the map not to change the meanig*)
 		else KM.add e1' x  env in
      let env'' = add_get env' e1' in
      Let((x, t), e1', g env'' e2)
   | LetRec ({ name = (x, t); args = yts; body = e1 }, e2) -> (*elimination won't be done to avoid making extra closures*)
       LetRec ({ name = (x,t); args = yts; body =  g KM.empty e1 }, g env e2)
-  | LetTuple (xts, y, e) -> (*TODO:*)
-     LetTuple (xts, y, g env e)
+  | LetTuple (xts, y, e) -> 
+     let e' = LetTuple (xts, y, g env e) in
+     replace e' env
   | IfEq (x, y, e1, e2) ->
      let e' = IfEq (x, y, g env e1, g env e2) in
      replace e' env
-  | IfLE (x, y, e1, e2) ->
-     let e' = IfLE (x, y, g env e1, g env e2) in
+  | IfLT (x, y, e1, e2) ->
+     let e' = IfLT (x, y, g env e1, g env e2) in
      replace e' env
 							    
   | e -> replace e env
 
 let f e = g KM.empty e
+
+
+
+
+

@@ -3,7 +3,7 @@ let limit = ref 1000
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
+  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f(Cse.f (Beta.f e))))) in
   if e = e' then e else
   iter (n - 1) e'
 
@@ -17,12 +17,13 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
 	     (Closure.f
 		(KNormal.p debugchan
 		(iter !limit
+		   (KNormal.p debugchan
 		   (Alpha.f
 		   (KNormal.p debugchan
 		      (KNormal.f
 		      (Syntax.p debugchan
 			 (Typing.f
-			    (Parser.exp Lexer.token l))))))))))))
+			    (Parser.exp Lexer.token l)))))))))))))
 
 let string s = lexbuf stdout stderr (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
