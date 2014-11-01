@@ -218,7 +218,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (Tail, CallCls(x, ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [(x, reg_cl)] ys zs;
       Printf.fprintf oc "\tload\t%s, %s, 0\n" ((*reg*) reg_sw) ((*reg*) reg_cl);
-      Printf.fprintf oc "\tmov\t%s, %s\n\tbeqi\t$r0, $r0, %s\n" cnt_reg ((*reg*) reg_sw) cnt_reg; 
+      Printf.fprintf oc "\tmov\t%s, %s\n\tbeq\t$r0, $r0, %s, 0\n" cnt_reg ((*reg*) reg_sw) cnt_reg; 
   | (Tail, CallDir(Id.L(x), ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
       Printf.fprintf oc "\tbeqi\t $r00, $r00, %s\n" x
