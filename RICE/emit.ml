@@ -340,7 +340,7 @@ let f oc (Prog(data, fundefs, e)) = (*TODO: main周り以外のアセンブリの成型*)
   Printf.fprintf oc "   # main program start\n";
   stackset := S.empty;
   stackmap := [];
-  g oc (NonTail("_R_0"), e);
+  g oc (NonTail("$r00"), e);
   Printf.fprintf oc "   # main program end\n";
   Printf.fprintf oc "\tbeq\t$r00, $r00, $r15, 0\n"
 (*  Printf.fprintf oc "\tmr\tr3, %s\n" regs.(0); *)
