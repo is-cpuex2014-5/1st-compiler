@@ -186,10 +186,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_tail_if_imm oc e1 e2 "bge" "blt" x y *)
   | (Tail, IfFEq(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_tail_if oc e1 e2 "beq" "bne" x y
+      g'_tail_if oc e1 e2 "bfeq" "bfne" x y
   | (Tail, IfFLT(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_tail_if oc e1 e2 "blt" "bge" x y
+      g'_tail_if oc e1 e2 "bflt" "bfge" x y
   | (NonTail(z), IfEq(x, V(y), e1, e2)) ->
       (*Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);*)
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne" x y
@@ -210,10 +210,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "bge" "blt" x y  *)
   | (NonTail(z), IfFEq(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne" x y
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "bfeq" "bfne" x y
   | (NonTail(z), IfFLT(x, y, e1, e2)) ->
       (*Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);*)
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "blt" "bge" x y
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "bflt" "bfge" x y
   (* 関数呼び出しの仮想命令の実装 *)
   | (Tail, CallCls(x, ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [(x, reg_cl)] ys zs;
