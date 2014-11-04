@@ -125,8 +125,8 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
 	       Let ((offset, Type.Int), Sll (y, C (2)), 
 		    Ans (Store (z, x, V (offset)))) 
 	   | _ -> assert false)
-  | Closure.ExtArray (Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
-  | Closure.ExtTuple (Id.L(x)) -> Ans(SetL(Id.L("min_caml_" ^ x)))
+  | Closure.ExtArray (Id.L(x)) -> Ans(SetL(Id.L(x)))
+  | Closure.ExtTuple (Id.L(x)) -> Ans(SetL(Id.L(x)))
 
 (* 関数の仮想マシンコード生成 *)
 let h { Closure.name = (Id.L(x), t); Closure.args = yts; 

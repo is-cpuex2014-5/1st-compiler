@@ -100,7 +100,7 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure
   | KNormal.Put(x, y, z) -> Put(x, y, z)
   | KNormal.ExtArray(x) -> ExtArray(Id.L(x))
   | KNormal.ExtTuple(x) -> ExtTuple(Id.L(x))
-  | KNormal.ExtFunApp(x, ys) -> AppDir(Id.L("min_caml_" ^ x), ys)
+  | KNormal.ExtFunApp(x, ys) -> AppDir(Id.L(x), ys)
 
 let f e =
   toplevel := [];
