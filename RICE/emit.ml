@@ -62,7 +62,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       let m = i lxor (n lsl 16) in
       let r = (*reg*) x in
 	Printf.fprintf oc "\tlis\t%s, %d\n" r n;
-	Printf.fprintf oc "\tori\t%s, %s, %d\n" r r m
+	Printf.fprintf oc "\taddil\t%s, %s, %d\n" r r m
   | (NonTail(x), FLi(Id.L(l))) ->
       let s = load_label reg_tmp l in
       Printf.fprintf oc "%s\tfload\t%s, %s, 0\n" s ((*reg*) x) reg_tmp
@@ -96,20 +96,22 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       Printf.fprintf oc "\tsra\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
   | (NonTail(x), Sra(y, C(z))) -> 
       Printf.fprintf oc "\tsrai\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z
-  | (NonTail(x), Load(y, V(z))) ->
-      Printf.fprintf oc "\tloadr\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
+  | (NonTail(x), Load(y, V(z))) -> (*loadrは消えたのか??*)
+      (*Printf.fprintf oc "\tloadr\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)*)
+     Printf.fprintf oc "\tadd\t$r11, %s, %s, 0\n\tload\t%s, $r11, 0\n" y z x
   | (NonTail(x), Load(y, C(z))) -> 
       Printf.fprintf oc "\tload\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z 
   | (NonTail(x), Loadi(y)) -> 
       Printf.fprintf oc "\tloadi\t%s, %d\n" ((*reg*) x) y
   | (NonTail(_), Store(x, y, V(z))) ->
-      Printf.fprintf oc "\tstorer\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
+      (*Printf.fprintf oc "\tstorer\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)*)
+     Printf.fprintf oc "\tadd\t$r11, %s, %s, 0\n\tstore\t%s, $r11, 0\n" y z x
   | (NonTail(_), Store(x, y, C(z))) -> 
       Printf.fprintf oc "\tstore\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z
   | (NonTail(_), Storei(x, y)) -> 
       Printf.fprintf oc "\tstorei\t%s, %d\n" ((*reg*) x) y
   | (NonTail(x), FMov(y)) when x = y -> ()
-  | (NonTail(x), FMov(y)) -> Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) x) ((*reg*) y)
+  | (NonTail(x), FMov(y)) -> Printf.fprintf oc "\tfadd\t%s, $f00,  %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FNeg(y)) -> 
       Printf.fprintf oc "\tfneg\t%s, %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FAdd(y, z)) -> 
@@ -121,13 +123,15 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), FDiv(y, z)) -> 
       Printf.fprintf oc "\tfdiv\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
   | (NonTail(x), FLoad(y, V(z))) ->
-      Printf.fprintf oc "\tfloadr\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
+      (*Printf.fprintf oc "\tfloadr\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)*)
+      Printf.fprintf oc "\tadd\t$r11, %s, %s, 0\n\tfload\t%s, $r11, 0\n" y z x
   | (NonTail(x), FLoad(y, C(z))) -> 
       Printf.fprintf oc "\tfload\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z
   | (NonTail(x), FLoadi(y)) -> 
       Printf.fprintf oc "\tfloadi\t%s, %d\n" ((*reg*) x) y
   | (NonTail(_), FStore(x, y, V(z))) ->
-      Printf.fprintf oc "\tfstorer\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
+      (*Printf.fprintf oc "\tfstorer\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)*)
+      Printf.fprintf oc "\tadd\t$r11, %s, %s, 0\n\tfstore\t%s, $r11, 0\n" y z x
   | (NonTail(_), FStore(x, y, C(z))) ->
       Printf.fprintf oc "\tfstore\t%s, %s, %d\n" ((*reg*) x) ((*reg*) y) z
   | (NonTail(_), FStorei(x, y)) ->
@@ -228,15 +232,14 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       let ss = stacksize () in
 	Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
 	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp ss;
-	Printf.fprintf oc "\tload\t%s, %s, 0\n" reg_tmp ((*reg*) reg_cl);
-	Printf.fprintf oc "\tmov\t%s, %s\n" cnt_reg reg_tmp ;
-	Printf.fprintf oc "\taddil\t%s, %s, 4\n\tstore\t%s, %s, -4\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*TODO: beqでいいのか？,その他の部分も少し怪しい？*)
+	Printf.fprintf oc "\tload\t%s, %s, 0\n" cnt_reg ((*reg*) reg_cl);
+	Printf.fprintf oc "\taddil\t%s, %s, 16\n\tstore\t%s, %s, 0\n\taddil\t%s, %s, 4\n\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp reg_sp reg_sp cnt_reg; (*callと同等*)
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
 	Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);
 	(if List.mem a allregs && a <> regs.(0) then 
 	   Printf.fprintf oc "\tmov\t%s, %s\n" ((*reg*) a) ((*reg*) regs.(0)) 
 	 else if List.mem a allfregs && a <> fregs.(0) then 
-	   Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
+	   Printf.fprintf oc "\tfadd\t%s, $f00, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
 	Printf.fprintf oc "\tstore\t%s, %s, -4\n"  reg_tmp reg_sp 
   | (NonTail(a), CallDir(Id.L(x), ys, zs)) -> 
       Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
@@ -250,7 +253,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	(if List.mem a allregs && a <> regs.(0) then
 	   Printf.fprintf oc "\tmov\t%s, %s\n" ((*reg*) a) ((*reg*) regs.(0))
 	 else if List.mem a allfregs && a <> fregs.(0) then
-	   Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
+	   Printf.fprintf oc "\tfadd\t%s, $f00, %s\n" ((*reg*) a) ((*reg*) fregs.(0)));
 	Printf.fprintf oc "\tstore\t%s, %s, -4\n" reg_tmp reg_sp
 and g'_tail_if oc e1 e2 b bn x y = 
   let b_else = Id.genid (bn ^ "_else") in
@@ -260,9 +263,9 @@ and g'_tail_if oc e1 e2 b bn x y =
       Printf.fprintf oc "%s:\n" b_else;
       stackset := stackset_back;
       g oc (Tail, e1)
-and g'_tail_if_imm oc e1 e2 b bn x y =  (*TODO : delete this code*)
+and g'_tail_if_imm oc e1 e2 b bn x y =  
   let b_else = Id.genid (bn ^ "_else") in
-    Printf.fprintf oc "\t%si\t%s, %d, %s\n" b x y b_else;
+    Printf.fprintf oc "\tli\t$r11, %d\n\t%si\t%s, $r11, %s\n" y b x b_else;
     let stackset_back = !stackset in
       g oc (Tail, e2);
       Printf.fprintf oc "%s:\n" b_else;
@@ -271,21 +274,21 @@ and g'_tail_if_imm oc e1 e2 b bn x y =  (*TODO : delete this code*)
 and g'_non_tail_if oc dest e1 e2 b bn x y = 
   let b_else = Id.genid (bn ^ "_else") in
   let b_cont = Id.genid (bn ^ "_cont") in
-    Printf.fprintf oc "\t%s\t%s, %s, %s\n" b x y b_else;
+    Printf.fprintf oc "\t%si\t%s, %s, %s\n" b x y b_else;
     let stackset_back = !stackset in
       g oc (dest, e2);
       let stackset1 = !stackset in
-	Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
+      Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
 	Printf.fprintf oc "%s:\n" b_else;
 	stackset := stackset_back;
 	g oc (dest, e1);
 	Printf.fprintf oc "%s:\n" b_cont;
 	let stackset2 = !stackset in
 	  stackset := S.inter stackset1 stackset2
-and g'_non_tail_if_imm oc dest e1 e2 b bn x y = (*TODO : delete this code*)
+and g'_non_tail_if_imm oc dest e1 e2 b bn x y = 
   let b_else = Id.genid (bn ^ "_else") in
   let b_cont = Id.genid (bn ^ "_cont") in
-    Printf.fprintf oc "\t%s\t%s, %d, %s\n" b x y b_else;
+    Printf.fprintf oc "\tli\t$r11, %d\n\t%si\t%s $r11, %s\n" y b x b_else;
     let stackset_back = !stackset in
       g oc (dest, e2);
       let stackset1 = !stackset in
@@ -309,7 +312,7 @@ and g'_args oc x_reg_cl ys zs =
 	(fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
 	(0, []) zs in
       List.iter
-        (fun (z, fr) -> Printf.fprintf oc "\tfmov\t%s, %s\n" ((*reg*) fr) ((*reg*) z))
+        (fun (z, fr) -> Printf.fprintf oc "\tfadd\t%s, $f00, %s\n" ((*reg*) fr) ((*reg*) z))
 	(shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
@@ -340,7 +343,7 @@ let f oc (Prog(data, fundefs, e)) = (*TODO: main周り以外のアセンブリの成型*)
   Printf.fprintf oc "   # main program start\n";
   stackset := S.empty;
   stackmap := [];
-  g oc (NonTail("$r00"), e);
+  g oc (NonTail("$r01"), e);
   Printf.fprintf oc "   # main program end\n";
   Printf.fprintf oc "\tbeq\t$r00, $r00, $r15, 0\n"
 (*  Printf.fprintf oc "\tmr\tr3, %s\n" regs.(0); *)

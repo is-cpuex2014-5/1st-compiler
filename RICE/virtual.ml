@@ -113,14 +113,21 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
       let offset = Id.genid "o" in  
 	(match M.find x env with
 	   | Type.Array (Type.Unit) -> Ans (Nop)
+	   | Type.Array (Type.Float) ->
+	       Let ((offset, Type.Int), Sll (y, C (2)),
+		    Ans (FLoad (x, V (offset))))
 	   | Type.Array (_) ->
 	       Let ((offset, Type.Int), Sll (y, C (2)),
 		    Ans (Load (x, V (offset))))
+
 	   | _ -> assert false)
   | Closure.Put (x, y, z) ->
       let offset = Id.genid "o" in 
 	(match M.find x env with
 	   | Type.Array (Type.Unit) -> Ans (Nop)
+	   | Type.Array (Type.Float) ->
+	       Let ((offset, Type.Int), Sll (y, C (2)), 
+		    Ans (FStore (z, x, V (offset)))) 
 	   | Type.Array (_) ->
 	       Let ((offset, Type.Int), Sll (y, C (2)), 
 		    Ans (Store (z, x, V (offset)))) 

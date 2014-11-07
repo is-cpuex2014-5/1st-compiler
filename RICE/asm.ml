@@ -118,3 +118,76 @@ let rec concat e1 xt e2 = match e1 with
 
 (* align : int -> int *)
 let align i = if i mod 8 = 0 then i else i + 4
+
+let rec indent oc =function
+  | 0 -> ()
+  | n -> Printf.fprintf oc "  "; indent oc (n-1)
+
+
+let rec print_exp n oc e = 
+  indent oc n;
+  match e with
+      | Nop -> Printf.fprintf oc "Nop\n"
+      | Li(i) -> Printf.fprintf oc "Li %d\n" i 
+      | FLi(L(l)) -> Printf.fprintf oc "Fli %s\n" l 
+      | SetL(L(l)) -> Printf.fprintf oc "SetL %s\n" l
+      | Mov(s) ->  Printf.fprintf oc "Mov %s\n" s
+      | Neg(s) ->  Printf.fprintf oc "Neg %s\n" s
+      | Add(x, V(y)) ->  Printf.fprintf oc "Add %s, %s\n" x y
+      | Add(x, C(i)) ->  Printf.fprintf oc "Add %s, %d\n" x i
+      | Sub(x, V(y)) ->  Printf.fprintf oc "Sub %s, %s\n" x y
+      | Sub(x, C(i)) ->  Printf.fprintf oc "Sub %s, %d\n" x i
+      | Sll(x, V(y)) ->  Printf.fprintf oc "Sll %s, %s\n" x y
+      | Sll(x, C(i)) ->  Printf.fprintf oc "Sll %s, %d\n" x i
+      | Srl(x, V(y)) ->  Printf.fprintf oc "Srl %s, %s\n" x y
+      | Srl(x, C(i)) ->  Printf.fprintf oc "Srl %s, %d\n" x i
+      | Sla(x, V(y)) ->  Printf.fprintf oc "Sla %s, %s\n" x y
+      | Sla(x, C(i)) ->  Printf.fprintf oc "Sla %s, %d\n" x i
+      | Sra(x, V(y)) ->  Printf.fprintf oc "Sra %s, %s\n" x y
+      | Sra(x, C(i)) ->  Printf.fprintf oc "Sra %s, %d\n" x i
+      | Load(x, V(y)) ->  Printf.fprintf oc "Load %s, %s\n" x y
+      | Load(x, C(i)) ->  Printf.fprintf oc "Load %s, %d\n" x i
+      | Store(x, y, V(z)) ->  Printf.fprintf oc "Store %s, %s, %s\n" x y z
+      | Store(x, y, C(i)) ->  Printf.fprintf oc "Store %s, %s,  %d\n" x y i
+      | FMov(x) -> Printf.fprintf oc "Fmov %s\n" x
+      | FNeg(x) -> Printf.fprintf oc "FNeg %s\n" x
+      | FAdd (x, y) -> Printf.fprintf oc "FAdd %s, %s\n" x y
+      | FSub (x, y) -> Printf.fprintf oc "FSub %s, %s\n" x y
+      | FMul (x, y) -> Printf.fprintf oc "FMul %s, %s\n" x y
+      | FDiv (x, y) -> Printf.fprintf oc "FDiv %s, %s\n" x y
+      | FLoad(x, V(y)) ->  Printf.fprintf oc "FLoad %s, %s\n" x y
+      | FLoad(x, C(i)) ->  Printf.fprintf oc "FLoad %s, %d\n" x i
+      | FStore(x, y, V(z)) ->  Printf.fprintf oc "FStore %s, %s, %s\n" x y z
+      | FStore(x, y, C(i)) ->  Printf.fprintf oc "FStore %s, %s,  %d\n" x y i
+      | Comment(s) -> Printf.fprintf oc "#%s\n" s
+      | IfEq (x, V(y), e1, e2) -> Printf.fprintf oc "IfEq %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfEq (x, C(i), e1, e2) -> Printf.fprintf oc "IfEq %s %d\n" x i; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfLT (x, V(y), e1, e2) -> Printf.fprintf oc "IfLT %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfLT (x, C(i), e1, e2) -> Printf.fprintf oc "IfLT %s %d\n" x i; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfFEq (x, y, e1, e2) -> Printf.fprintf oc "IfFEq %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfFLT (x, y, e1, e2) -> Printf.fprintf oc "IfFLT %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | CallCls(x, is, fs) -> Printf.fprintf oc "Callcls %s, args : " x; List.iter (fun x -> Printf.fprintf oc "%s " x) is;  List.iter (fun x -> Printf.fprintf oc "%s " x) fs;  Printf.fprintf oc "\n"
+      | CallDir(L(l), is, fs) -> Printf.fprintf oc "Callcls %s, args : " l;  List.iter (fun x -> Printf.fprintf oc "%s " x) is;  List.iter (fun x -> Printf.fprintf oc "%s " x) fs;  Printf.fprintf oc "\n"
+      | _ -> Printf.fprintf oc "will be implemented\n"						
+  and print_t n oc e = 
+    indent oc n;
+    match e with 
+    | Ans(e') -> print_exp n oc e'
+    | Let ((x, t), e1, e') -> Printf.fprintf oc "Let %s\n" x;
+			      print_exp (n + 1) oc e1 ;
+			      print_t (n + 1) oc e' 
+let print_fundef oc fdef = 
+  Printf.fprintf oc "Name : %s\n" (match fdef.name with L(l) -> l) ;
+  Printf.fprintf oc "Args "; List.iter (fun x -> Printf.fprintf oc "%s " x) fdef.args;  List.iter (fun x -> Printf.fprintf oc "%s " x) fdef.fargs; Printf.fprintf oc "\n";
+  Printf.fprintf oc "Body "; print_t 0 oc fdef.body 
+  
+  
+let p oc e = 
+  print_t 0 oc e; e
+let p' oc e = 
+  match e with
+    Prog(_,fdefs, e')as p ->
+    List.iter (fun x ->print_fundef oc x) fdefs; 
+    print_t 0 oc e'; 
+    p
+    

@@ -130,7 +130,8 @@ exp: /* ∞Ï»Ã§Œº∞ (caml2html: parser_exp) */
 | exp AST_DOT exp
     { addpos (FMul($1, $3)) }
 | exp SLASH_DOT exp
-    { addpos (FDiv($1, $3)) }
+      { addpos (App (Var "fdiv", [$1; $3])) }
+    /*{ addpos (FDiv($1, $3)) }*/
 | LET IDENT EQUAL exp IN exp
     %prec prec_let
     { addpos (Let(addtyp $2, $4, $6)) }
