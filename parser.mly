@@ -29,6 +29,8 @@ let addpos e =  (*TODO: add file name*)
 %token SLASH
 %token AST_DOT
 %token SLASH_DOT
+%token INT_OF_FLOAT
+%token FLOAT_OF_INT
 %token EQUAL
 %token LESS_GREATER
 %token LESS_EQUAL
@@ -130,7 +132,7 @@ exp: /* 一般の式 (caml2html: parser_exp) */
 | exp AST_DOT exp
     { addpos (FMul($1, $3)) }
 | exp SLASH_DOT exp
-      { addpos (App (Var "fdiv", [$1; $3])) }
+      { addpos (FMul($1 ,(App (Var "finv", [$3])))) }
     /*{ addpos (FDiv($1, $3)) }*/
 | LET IDENT EQUAL exp IN exp
     %prec prec_let
@@ -154,6 +156,12 @@ exp: /* 一般の式 (caml2html: parser_exp) */
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { addpos (Array($2, $3)) }
+| INT_OF_FLOAT simple_exp
+    %prec prec_app
+    { addpos (Ftoi($2)) }
+| FLOAT_OF_INT simple_exp
+    %prec prec_app
+    { addpos (Itof($2)) }
 | error
     { let (line, column) = Pos.convert (Parsing.symbol_start ())
       in

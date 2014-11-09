@@ -11,6 +11,8 @@ type t =
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | Itof of Id.t
+  | Ftoi of Id.t
   | IfEq of Id.t * Id.t * t * t
   | IfLT of Id.t * Id.t * t * t
   | Let of (Id.t * Type.t) * t * t

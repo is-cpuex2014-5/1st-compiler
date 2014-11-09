@@ -35,6 +35,8 @@ let rec deref_term = function
   | FSub(e1, e2) -> FSub(deref_term e1, deref_term e2)
   | FMul(e1, e2) -> FMul(deref_term e1, deref_term e2)
   | FDiv(e1, e2) -> FDiv(deref_term e1, deref_term e2)
+  | Itof(e) -> Itof(deref_term e)
+  | Ftoi(e) -> Ftoi(deref_term e)
   | If(e1, e2, e3) -> If(deref_term e1, deref_term e2, deref_term e3)
   | Let(xt, e1, e2) -> Let(deref_id_typ xt, deref_term e1, deref_term e2)
   | LetRec({ name = xt; args = yts; body = e1 }, e2) ->
@@ -106,6 +108,12 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 	unify Type.Float (g env e1);
 	unify Type.Float (g env e2);
 	Type.Float
+    | Itof(e) ->
+       unify Type.Int (g env e);
+       Type.Float
+    | Ftoi(e) -> 
+       unify Type.Float (g env e);
+       Type.Int
     | Eq(e1, e2) | LT(e1, e2) ->
 	unify (g env e1) (g env e2);
 	Type.Bool
@@ -156,7 +164,8 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 (*raise (Error(deref_term e, deref_typ t1, deref_typ t2))*)
 
 let f e =
-  extenv := M.empty;
+  extenv := M.add_list [
+			("finv", (Type.Fun ([Type.Float], Type.Float)));] M.empty;
 (*
   (match deref_typ (g M.empty e) with
   | Type.Unit -> ()

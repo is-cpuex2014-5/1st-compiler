@@ -12,6 +12,8 @@ type t = (* K正規化後の式 (caml2html: knormal_t) *)
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | Itof of Id.t
+  | Ftoi of Id.t
   | IfEq of Id.t * Id.t * t * t (* 比較 + 分岐 (caml2html: knormal_branch) *)
   | IfLT of Id.t * Id.t * t * t (* 比較 + 分岐 *)
   | Let of (Id.t * Type.t) * t * t
@@ -29,7 +31,7 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec fv = function (* 式に出現する（自由な）変数 (caml2html: knormal_fv) *)
   | Unit | Int(_) | Float(_) | ExtArray(_) | ExtTuple(_) -> S.empty
-  | Neg(x) | FNeg(x) -> S.singleton x
+  | Neg(x) | FNeg(x) | Itof(x) | Ftoi(x) -> S.singleton x
   | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2) | IfLT(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
@@ -86,6 +88,12 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
       insert_let (g env e1)
 	(fun x -> insert_let (g env e2)
 	    (fun y -> FDiv(x, y), Type.Float))
+  | Syntax.Itof(e) ->
+      insert_let (g env e)
+	(fun x -> Itof(x), Type.Float)
+  | Syntax.Ftoi(e) ->
+      insert_let (g env e)
+	(fun x -> Ftoi(x), Type.Int)
   | Syntax.Eq _ | Syntax.LT _ as cmp ->
       g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false)))
   | Syntax.If(e1, e2,e3) -> 
@@ -218,6 +226,10 @@ let p oc e =
 			 pid oc (n+1) s1; pid oc (n+1) s2
       | FDiv (s1, s2) -> Printf.fprintf oc "FDIV\n";
 			 pid oc (n+1) s1; pid oc (n+1) s2
+      | Itof(s) -> Printf.fprintf oc "ITOF\n"; 
+		 pid oc (n+1) s
+      | Ftoi(s) -> Printf.fprintf oc "FTOI\n"; 
+		 pid oc (n+1) s
       | IfEq (s1, s2, e1, e2) -> Printf.fprintf oc "IFEQ\n";
 				 pid oc (n+1) s1; pid oc (n+1) s2;
 				 f (n+1) e1; f (n+1) e2

@@ -48,6 +48,12 @@ rule token = parse
     { AST_DOT }
 | "/."
     { SLASH_DOT }
+| "int_of_float"
+    { INT_OF_FLOAT }
+| "truncate"
+    { INT_OF_FLOAT }
+| "float_of_int"
+    { FLOAT_OF_INT }
 | '='
     { EQUAL }
 | "<>"

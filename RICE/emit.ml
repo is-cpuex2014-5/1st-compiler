@@ -113,7 +113,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), FMov(y)) when x = y -> ()
   | (NonTail(x), FMov(y)) -> Printf.fprintf oc "\tfadd\t%s, $f00,  %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FNeg(y)) -> 
-      Printf.fprintf oc "\tfneg\t%s, %s\n" ((*reg*) x) ((*reg*) y)
+      Printf.fprintf oc "\tfsub\t%s, $r00,  %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FAdd(y, z)) -> 
       Printf.fprintf oc "\tfadd\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
   | (NonTail(x), FSub(y, z)) -> 
@@ -122,6 +122,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       Printf.fprintf oc "\tfmul\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
   | (NonTail(x), FDiv(y, z)) -> 
       Printf.fprintf oc "\tfdiv\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
+  | (NonTail(x), Itof(y)) -> 
+      Printf.fprintf oc "\titof\t%s, %s\n" ((*reg*) x) ((*reg*) y)
+  | (NonTail(x), Ftoi(y)) -> 
+      Printf.fprintf oc "\tftoi\t%s, %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FLoad(y, V(z))) ->
       (*Printf.fprintf oc "\tfloadr\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)*)
       Printf.fprintf oc "\tadd\t$r11, %s, %s, 0\n\tfload\t%s, $r11, 0\n" y z x
@@ -156,12 +160,12 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (Tail, (Nop | Store _ | Storei _ |  FStore _ | FStorei _ |  Comment _ | Save _ as exp)) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tret\n";
-  | (Tail, (Li _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Sll _ | Sla _ | Srl _ | Sra _ |
-            Load _ | Loadi _ as exp)) -> 
+  | (Tail, (Li _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Sll _ | Sla _ | Srl _ | Sra _ | 
+            Load _ | Loadi _ | Ftoi _ as exp)) -> 
       g' oc (NonTail(regs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (FLi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |
-            FLoad _ | FLoadi _  as exp)) ->
+            FLoad _ | FLoadi _ | Itof _ as exp)) ->
       g' oc (NonTail(fregs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Restore(x) as exp)) ->

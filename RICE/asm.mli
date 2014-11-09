@@ -25,6 +25,8 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | Itof of Id.t
+  | Ftoi of Id.t
   | FLoad of Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
   | FLoadi of int 

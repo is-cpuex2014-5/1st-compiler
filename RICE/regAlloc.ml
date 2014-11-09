@@ -44,10 +44,10 @@ let rec alloc dest cont regenv x t =
   assert (not (M.mem x regenv));
   let all =
     match t with
-    | Type.Unit -> ["%r0"] (* dummy *)
+    | Type.Unit -> ["$r00"] (* dummy *)
     | Type.Float -> allfregs
     | _ -> allregs in
-  if all = ["%r0"] then Alloc("%r0") else (* [XX] ad hoc optimization *)
+  if all = ["$r00"] then Alloc("$r00") else (* [XX] ad hoc optimization *)
   if is_reg x then Alloc(x) else
   let free = fv cont in
   try
@@ -135,6 +135,8 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml2html: regal
   | FSub(x, y) -> (Ans(FSub(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | FMul(x, y) -> (Ans(FMul(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | FDiv(x, y) -> (Ans(FDiv(find x Type.Float regenv, find y Type.Float regenv)), regenv)
+  | Itof(x) -> (Ans(Itof(find x Type.Int regenv)), regenv)
+  | Ftoi(x) -> (Ans(Ftoi(find x Type.Float regenv)), regenv)
   | FLoad(x, y') -> (Ans(FLoad(find x Type.Float regenv, find' y' regenv)), regenv)
   | FStore(x, y, z') -> (Ans(FStore(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv)), regenv)
   | FStorei(x, y) -> (Ans(FStorei(find x Type.Float regenv, y)), regenv)

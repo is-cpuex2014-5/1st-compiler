@@ -27,6 +27,8 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FSub of Id.t * Id.t
   | FMul of Id.t * Id.t
   | FDiv of Id.t * Id.t
+  | Itof of Id.t
+  | Ftoi of Id.t
   | FLoad of Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
   | FLoadi of int 
@@ -88,8 +90,8 @@ let fv_id_or_imm = function V (x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Li (_) | FLi (_) | SetL (_) | Loadi (_) | FLoadi (_) |
   Comment (_) | Restore (_) -> []
-  | Mov (x) | Neg (x) | Storei (x, _) | FMov (x) | FNeg (x) | FStorei (x, _) | 
-  Save (x, _) -> [x]
+  | Mov (x) | Neg (x) | Storei (x, _) | Itof(x) | Ftoi(x) |
+  FMov (x) | FNeg (x) |  FStorei (x, _) | Save (x, _) -> [x]
   | Add (x, y') | Sub (x, y') -> x ::  fv_id_or_imm y'
   | Sll (x, y') | Srl (x, y') |Sla (x, y') |Sra (x, y') |
   Load (x, y') | FLoad (x, y') ->  
@@ -155,6 +157,8 @@ let rec print_exp n oc e =
       | FSub (x, y) -> Printf.fprintf oc "FSub %s, %s\n" x y
       | FMul (x, y) -> Printf.fprintf oc "FMul %s, %s\n" x y
       | FDiv (x, y) -> Printf.fprintf oc "FDiv %s, %s\n" x y
+      | Itof(x) -> Printf.fprintf oc "Itof %s\n" x
+      | Ftoi(x) -> Printf.fprintf oc "Ftoi %s\n" x
       | FLoad(x, V(y)) ->  Printf.fprintf oc "FLoad %s, %s\n" x y
       | FLoad(x, C(i)) ->  Printf.fprintf oc "FLoad %s, %d\n" x i
       | FStore(x, y, V(z)) ->  Printf.fprintf oc "FStore %s, %s, %s\n" x y z
