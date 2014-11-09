@@ -7,6 +7,7 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Neg of t
   | Add of t * t
   | Sub of t * t
+  | Shift of t * int (*immediate only*)
   | FNeg of t
   | FAdd of t * t
   | FSub of t * t
@@ -54,6 +55,9 @@ let p oc e =
       | Neg e -> Printf.fprintf oc "NEG\n"; f (n+1) e
       | Add (e1, e2) -> Printf.fprintf oc "ADD\n"; f (n+1) e1; f (n+1) e2
       | Sub (e1, e2) -> Printf.fprintf oc "SUB\n"; f (n+1) e1; f (n+1) e2
+      | Shift(e, i) -> Printf.fprintf oc "SHIFT\n"; f (n+1) e;
+		       indent oc (n+1);
+		       Printf.fprintf oc "%d\n" i
       | FNeg e -> Printf.fprintf oc "FNEG\n"; f (n+1) e
       | FAdd (e1, e2) -> Printf.fprintf oc "FADD\n"; f (n+1) e1; f (n+1) e2
       | FSub (e1, e2) -> Printf.fprintf oc "FSUB\n"; f (n+1) e1; f (n+1) e2

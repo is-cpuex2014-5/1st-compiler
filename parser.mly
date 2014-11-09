@@ -13,7 +13,21 @@ let addpos e =  (*TODO: add file name*)
     Pos.epos = epos;
   } in
   Pos (p, e)
-  
+ exception Cannot_Convert
+ let is_pow_of_two x = (x land -x = abs x)
+ let rec log2 x = if x = 1 then 0 else 1 + log2 (x / 2)
+ let mul2shift = (fun (x,y) -> Shift(x, y))
+ let div2shift = (fun (x,y) -> Shift(x, -y))
+ let mul_div2shift x y op = 
+   if is_pow_of_two (abs y) then
+     if y = 0 then Int(0)
+     else if y > 0 then
+       (op (x, log2 (abs y)))
+     else
+       Sub (Int(0), (op (x, log2 (abs y))))
+   else 
+     raise Cannot_Convert
+
 %}
 
 /* 字句を表すデータ型の定義 (caml2html: parser_token) */
@@ -126,9 +140,15 @@ exp: /* 一般の式 (caml2html: parser_exp) */
 | exp MINUS_DOT exp
     { addpos (FSub($1, $3)) }
 | exp AST exp
-    { addpos (App (Var "mul", [$1; $3])) }
+    { addpos (match (getexp $3) with
+	      | Int(i) -> (try mul_div2shift $1 i mul2shift 
+			   with Cannot_Convert -> App (Var "mul", [$1; $3]))
+	      |_ -> App (Var "mul", [$1; $3])) }
 | exp SLASH exp
-    { addpos (App (Var "div", [$1; $3])) }
+    { addpos (match (getexp $3) with
+	      | Int(i) -> (try mul_div2shift $1 i div2shift 
+			   with Cannot_Convert -> App (Var "div", [$1; $3]))
+	      | _ -> App (Var "div", [$1; $3])) }
 | exp AST_DOT exp
     { addpos (FMul($1, $3)) }
 | exp SLASH_DOT exp
