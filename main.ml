@@ -1,4 +1,8 @@
+open Unix
 let limit = ref 1000
+let foutname = ref ""
+let temp = "a"
+let buffer = String.create 1024
 
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
@@ -13,31 +17,43 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
   Emit.f outchan
     (RegAlloc.f
        (Simm.f
-	  (Asm.p' debugchan
+	  ((*Asm.p' debugchan*)
 	  (Virtual.f
 	     (Closure.f
-		(KNormal.p debugchan
+		((*KNormal.p debugchan*)
 		(iter !limit
-		   (KNormal.p debugchan
+		   ((*KNormal.p debugchan*)
 		   (Alpha.f
-		   (KNormal.p debugchan
+		   ((*KNormal.p debugchan*)
 		      (KNormal.f
-		      (Syntax.p debugchan
+		      ((*Syntax.p debugchan*)
 			 (Typing.f
 			    (Parser.exp Lexer.token l))))))))))))))
 
-let string s = lexbuf stdout stderr (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let string s = lexbuf Pervasives.stdout Pervasives.stderr (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
 let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
-  let debugchan = open_out (f ^ "_dbg.txt") in 
+  let outchan = open_out (!foutname ^ ".s") in
+  let debugchan = open_out (!foutname ^ "_dbg.txt") in 
   try
     lexbuf outchan debugchan (Lexing.from_channel inchan);
     close_in inchan;
     close_out outchan;
     close_out debugchan;
   with e -> (close_in inchan; close_out outchan; raise e)
+
+let merge f = 
+ let fd_in = openfile (f ^ ".ml") [O_RDONLY] 0 in
+ let fd_out = openfile (temp ^ ".ml") [O_WRONLY; O_CREAT; O_APPEND] 0o666 in
+ let rec copy_loop () = match read fd_in buffer 0 1024 with
+   |  0 -> ()
+   | r -> ignore (write fd_out buffer 0 r); copy_loop ()
+ in
+ copy_loop ();
+ close fd_in;
+ close fd_out
+  
 
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
@@ -47,6 +63,10 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
+  let fd_out = openfile (temp ^ ".ml") [O_WRONLY; O_CREAT; O_TRUNC] 0o666 in
+  close fd_out;
+  foutname := List.hd (List.rev !files);
   List.iter
-    (fun f -> ignore (file f))
-    !files
+    (fun f -> ignore (merge f))
+    !files;
+    ignore (file  temp)
