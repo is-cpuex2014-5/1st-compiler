@@ -94,6 +94,12 @@ let find' x' regenv =
   | V(x) -> V(find x Type.Int regenv)
   | c -> c
 
+let find_zero x' regenv =
+  match x' with
+  | V(x) -> V(find x Type.Int regenv)
+  | C(i) when i = 0 ->  V("$r00")
+  | c -> failwith "non-zero is in the branch immediate"
+
 let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: regalloc_g) *)
   | Ans(exp) -> g'_and_restore dest cont regenv exp
   | Let((x, t) as xt, exp, e) ->
@@ -140,8 +146,8 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml2html: regal
   | FLoad(x, y') -> (Ans(FLoad(find x Type.Int regenv, find' y' regenv)), regenv)
   | FStore(x, y, z') -> (Ans(FStore(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv)), regenv)
   | FStorei(x, y) -> (Ans(FStorei(find x Type.Float regenv, y)), regenv)
-  | IfEq(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
-  | IfLT(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLT(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
+  | IfEq(x', y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find_zero x' regenv, find_zero y' regenv, e1', e2')) e1 e2
+  | IfLT(x', y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLT(find_zero x' regenv, find_zero y' regenv, e1', e2')) e1 e2
   | IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | IfFLT(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLT(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | CallCls(x, ys, zs) as exp -> g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs

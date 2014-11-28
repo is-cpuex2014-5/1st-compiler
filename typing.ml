@@ -165,18 +165,10 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Pos(p, e1) ->errorpos := p ; g env e1
   with Unify(t1, t2) -> failwith ("Type error : conflict between " ^ (Type.sprint t1) ^ " and " ^ (Type.sprint t2)  ^
 				    ". " ^ (Pos.sprint !errorpos))
-(*raise (Error(deref_term e, deref_typ t1, deref_typ t2))*)
 
 let f e =
   extenv := M.add_list [
 			("finv", (Type.Fun ([Type.Float], Type.Float)));] M.empty;
-(*
-  (match deref_typ (g M.empty e) with
-  | Type.Unit -> ()
-  | _ -> Format.eprintf "warning: final result does not have type unit@.");
-*)
-  (*(try unify Type.Unit (g M.empty e)
-  with Unify _ -> failwith "top level does not have type unit");*)
   ignore (g M.empty e);
   extenv := M.map deref_typ !extenv;
   deref_term e

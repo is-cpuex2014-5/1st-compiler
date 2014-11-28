@@ -31,8 +31,26 @@ and g' env = function (* 各命令の即値最適化 *)
   | FStore(x, y, V(z)) when M.mem y env && M.mem z env  && le21bit (M.find y env  + M.find z env) ->
      FStorei(x, M.find y env  + M.find z env)
   | FStore(x, y, V(z)) when M.mem z env && le17bit (M.find z env) -> FStore(x, y, C(M.find z env))
-  | IfEq(x, V(y), e1, e2) when M.mem y env -> 
-      IfEq(x, C(M.find y env), g env e1, g env e2)
+  | IfEq(x', V(y), e1, e2) when M.mem y env -> (*optimize if one of the reg is zero*)
+     if M.find y env = 0 then
+       IfEq(x', C(0), g env e1, g env e2)
+     else
+       IfEq(x', V(y), g env e1, g env e2)
+  | IfEq(V(x), y', e1, e2) when M.mem x env -> 
+     if M.find x env = 0 then
+       IfEq(C(0), y', g env e1, g env e2)
+     else
+       IfEq(V(x), y', g env e1, g env e2)
+  | IfLT(x', V(y), e1, e2) when M.mem y env -> 
+     if M.find y env = 0 then
+       IfLT(x', C(0), g env e1, g env e2)
+     else
+       IfLT(x', V(y), g env e1, g env e2)
+  | IfLT(V(x), y', e1, e2) when M.mem x env -> 
+     if M.find x env = 0 then
+       IfLT(C(0), y', g env e1, g env e2)
+     else
+       IfLT(V(x), y', g env e1, g env e2)
   (*| IfLE(x, V(y), e1, e2) when M.mem y env ->
       IfLE(x, C(M.find y env), g env e1, g env e2)
   | IfGE(x, V(y), e1, e2) when M.mem y env -> 
