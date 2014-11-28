@@ -26,7 +26,7 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
 		   (Alpha.f
 		   ((*KNormal.p debugchan*)
 		      (KNormal.f
-		      ((*Syntax.p debugchan*)
+		      (Syntax.p debugchan
 			 (Typing.f
 			    (Parser.exp Lexer.token l))))))))))))))
 

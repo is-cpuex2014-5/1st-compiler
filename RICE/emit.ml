@@ -64,14 +64,15 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	Printf.fprintf oc "\tlis\t%s, %d\n" r n;
 	Printf.fprintf oc "\taddil\t%s, %s, %d\n" r r m
   | (NonTail(x), FLi(Id.L(l))) ->
-      let s = load_label reg_tmp l in
-      Printf.fprintf oc "%s\tfload\t%s, %s, 0\n" s ((*reg*) x) reg_tmp
+      (*let s = load_label reg_tmp l in
+      Printf.fprintf oc "%s\tfload\t%s, %s, 0\n" s ((*reg*) x) reg_tmp*)
+     Printf.fprintf oc "\tfload\t%s, $r00, %s\n" x l 
   | (NonTail(x), SetL(Id.L(y))) -> 
       let s = load_label x y in
       Printf.fprintf oc "%s" s
   | (NonTail(x), Mov(y)) when x = y -> ()
   | (NonTail(x), Mov(y)) -> Printf.fprintf oc "\tmov\t%s, %s\n" ((*reg*) x) ((*reg*) y)
-  | (NonTail(x), Neg(y)) -> Printf.fprintf oc "\tneg\t%s, %s\n" ((*reg*) x) ((*reg*) y)
+  | (NonTail(x), Neg(y)) -> Printf.fprintf oc "\tsub\t%s, $r00, %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), Add(y, V(z))) -> 
       Printf.fprintf oc "\tadd\t%s, %s, %s, 0\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
  | (NonTail(x), Add(y, C(z))) -> 
@@ -113,7 +114,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), FMov(y)) when x = y -> ()
   | (NonTail(x), FMov(y)) -> Printf.fprintf oc "\tfadd\t%s, $f00,  %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FNeg(y)) -> 
-      Printf.fprintf oc "\tfsub\t%s, $r00,  %s\n" ((*reg*) x) ((*reg*) y)
+      Printf.fprintf oc "\tfsub\t%s, $f00,  %s\n" ((*reg*) x) ((*reg*) y)
   | (NonTail(x), FAdd(y, z)) -> 
       Printf.fprintf oc "\tfadd\t%s, %s, %s\n" ((*reg*) x) ((*reg*) y) ((*reg*) z)
   | (NonTail(x), FSub(y, z)) -> 

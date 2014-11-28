@@ -137,7 +137,7 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml2html: regal
   | FDiv(x, y) -> (Ans(FDiv(find x Type.Float regenv, find y Type.Float regenv)), regenv)
   | Itof(x) -> (Ans(Itof(find x Type.Int regenv)), regenv)
   | Ftoi(x) -> (Ans(Ftoi(find x Type.Float regenv)), regenv)
-  | FLoad(x, y') -> (Ans(FLoad(find x Type.Float regenv, find' y' regenv)), regenv)
+  | FLoad(x, y') -> (Ans(FLoad(find x Type.Int regenv, find' y' regenv)), regenv)
   | FStore(x, y, z') -> (Ans(FStore(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv)), regenv)
   | FStorei(x, y) -> (Ans(FStorei(find x Type.Float regenv, y)), regenv)
   | IfEq(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
