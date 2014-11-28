@@ -34,7 +34,7 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
 	  let (l, _) = List.find (fun (_, d') -> d = d') !data in
 	    l
 	with Not_found ->
-	  let l = Id.L (Id.genid "l") in
+	  let l = (if d = 0.0 then Id.L ("fzero") else Id.L (Id.genid "l")) in
 	    data := (l, d) :: !data;
 	    l in
 	Ans (FLi (l))
