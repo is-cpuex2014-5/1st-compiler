@@ -9,10 +9,17 @@ let memf x env =
 let memt x env =
   try (match M.find x env with Tuple(_) -> true | _ -> false)
   with Not_found -> false
+let memif x env =
+  M.mem x env &&
+    (match M.find x env with 
+       IfEq (x, y, Int _, Int _) | IfLT (x, y, Int _, Int _) -> true 
+       | _ -> false)
 
 let findi x env = (match M.find x env with Int(i) -> i | _ -> raise Not_found)
 let findf x env = (match M.find x env with Float(d) -> d | _ -> raise Not_found)
 let findt x env = (match M.find x env with Tuple(ys) -> ys | _ -> raise Not_found)
+
+
 
 let rec g env = function (* 定数畳み込みルーチン本体 (caml2html: constfold_g) *)
   | Var(x) when memi x env -> Int(findi x env)
@@ -47,9 +54,57 @@ let rec g env = function (* 定数畳み込みルーチン本体 (caml2html: constfold_g) *)
   | Itof(x) when memi x env -> Float(float_of_int(findi x env)) (*this might increases the number of instructions*)
   | IfEq(x, y, e1, e2) when memi x env && memi y env -> if findi x env = findi y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2) when memf x env && memf y env -> if findf x env = findf y env then g env e1 else g env e2
-  | IfEq(x, y, e1, e2) -> IfEq(x, y, g env e1, g env e2)
   | IfLT(x, y, e1, e2) when memi x env && memi y env -> if findi x env <= findi y env then g env e1 else g env e2
   | IfLT(x, y, e1, e2) when memf x env && memf y env -> if findf x env <= findf y env then g env e1 else g env e2
+  | IfEq (x, y, e1, e2) when memif x env && memi y env ->
+     let i = findi y env in
+     (match M.find x env with
+      | IfEq (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e1
+      | IfEq (z, w, Int(i1), Int(i2)) when i1 = i -> IfEq (z, w, g env e1, g env e2)
+      | IfEq (z, w, Int(i1), Int(i2)) when i2 = i -> IfEq (z, w, g env e2, g env e1)
+      | IfEq (z, w, Int(i1), Int(i2))  -> g env e2
+      | IfLT (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e1
+      | IfLT (z, w, Int(i1), Int(i2)) when i1 = i -> IfLT (z, w, g env e1, g env e2)
+      | IfLT (z, w, Int(i1), Int(i2)) when i2 = i -> IfLT (z, w, g env e2, g env e1)
+      | IfLT (z, w, Int(i1), Int(i2)) -> g env e2
+      | _ -> assert false)
+  | IfEq (y, x, e1, e2) when memif x env && memi y env ->
+      let i = findi y env in
+        (match M.find x env with
+          | IfEq (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e1
+          | IfEq (z, w, Int(i1), Int(i2)) when i1 = i -> IfEq (z, w, g env e1, g env e2)
+          | IfEq (z, w, Int(i1), Int(i2)) when i2 = i -> IfEq (z, w, g env e2, g env e1)
+          | IfEq (z, w, Int(i1), Int(i2)) -> g env e2
+          | IfLT (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e1
+          | IfLT (z, w, Int(i1), Int(i2)) when i1 = i -> IfLT (z, w, g env e1, g env e2)
+          | IfLT (z, w, Int(i1), Int(i2)) when i2 = i -> IfLT (z, w, g env e2, g env e1)
+          | IfLT (z, w, Int(i1), Int(i2)) -> g env e2
+          | _ -> assert false)
+  | IfLT (x, y, e1, e2) when memif x env && memi y env ->
+      let i = findi y env in
+        (match M.find x env with
+          | IfEq (z, w, Int(i1), Int(i2)) when i1 < i && i2 < i -> g env e1
+          | IfEq (z, w, Int(i1), Int(i2)) when i1 < i -> IfEq (z, w, g env e1, g env e2)
+          | IfEq (z, w, Int(i1), Int(i2)) when i2 < i -> IfEq (z, w, g env e2, g env e1)
+          | IfEq (z, w, Int(i1), Int(i2)) -> g env e2
+          | IfLT (z, w, Int(i1), Int(i2)) when i1 < i && i2 < i -> g env e1
+          | IfLT (z, w, Int(i1), Int(i2)) when i1 < i -> IfLT (z, w, g env e1, g env e2)
+          | IfLT (z, w, Int(i1), Int(i2)) when i2 < i -> IfLT (z, w, g env e2, g env e1)
+          | IfLT (z, w, Int(i1), Int(i2)) -> g env e2
+          | _ -> assert false)
+  | IfLT (y, x, e1, e2) when memif x env && memi y env ->
+      let i = findi y env in
+        (match M.find x env with
+          | IfEq (z, w, Int(i1), Int(i2)) when i < i1 && i < i2 -> g env e1
+          | IfEq (z, w, Int(i1), Int(i2)) when i < i1            -> IfEq (z, w, g env e1, g env e2)
+          | IfEq (z, w, Int(i1), Int(i2)) when i < i2 -> IfEq (z, w, g env e2, g env e1)
+          | IfEq (z, w, Int(i1), Int(i2))                         -> g env e2
+          | IfLT (z, w, Int(i1), Int(i2)) when i < i1 && i < i2 -> g env e1
+          | IfLT (z, w, Int(i1), Int(i2)) when i < i1            -> IfLT (z, w, g env e1, g env e2)
+          | IfLT (z, w, Int(i1), Int(i2)) when i < i2 -> IfLT (z, w, g env e2, g env e1)
+          | IfLT (z, w, Int(i1), Int(i2)) -> g env e2
+          | _ -> assert false)
+  | IfEq(x, y, e1, e2) -> IfEq(x, y, g env e1, g env e2)
   | IfLT(x, y, e1, e2) -> IfLT(x, y, g env e1, g env e2)
   | Let((x, t), e1, e2) -> (* letのケース (caml2html: constfold_let) *)
       let e1' = g env e1 in

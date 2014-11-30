@@ -25,15 +25,18 @@ let add_get env = function (*Strictly speaking, this is not a cse but this optim
   | Put(x, y, z) -> KM.add (Get (x, y)) z env
   | _ -> env
 
-let replace e env  = try Var(KM.find e env) with
-		       Not_found -> e
+let replace e env  = try 
+    let e' = KM.find e env in
+    Printf.eprintf "eliminating expression\n";
+    Var(e') 
+  with Not_found -> e
 
 (*main routine*)
 let rec g env = function 
   | Let((x, t), e1, e2) -> 
      let e1' = g env e1 in
      let env' = if has_side_effect e1'
-		then remove_get env (*Removing get from the map not to change the meanig*)
+		then remove_get env (*Removing get from the map not to change the meaning*)
 		else KM.add e1' x  env in
      let env'' = add_get env' e1' in
      Let((x, t), e1', g env'' e2)
