@@ -146,21 +146,3 @@ finv:
 	fmul    $f03, $f03, $f04
 	fmul    $f01, $f02, $f03          # return $2 * $3;
 	ret
-floor_D0:
-	.float 0.0
-	.globl floor
-floor: 
-	fload	$f02, $r00, floor_D0
-	bflti	$f01, $f02, floor_L0
-	ftoi	$r01, $f01
-	itof	$f01, $r01
-	ret
-floor_L0: # if($f01 < 0)
-	ftoi	$r01, $f01
-	itof	$f03, $r01
-	bfeqi	$f01, $f03, floor_L1
-	subi	$r01, $r01, 1
-	itof	$f01, $r01
-	ret
-floor_L1: #if $f01 is integer
-	ret

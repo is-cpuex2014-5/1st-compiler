@@ -106,6 +106,18 @@ let rec atan x =
   let res = res *. x -. 0.0174956 in
   let res = res *. x +. 0.928238 in
   let res = res *. x -. 0.0149898 in
-    res in
-					      
+    res 
+in
+
+let rec floor x = 
+  let y = int_of_float(x) in
+  if x > 0.0 then
+    float_of_int(y)
+  else 
+    if float_of_int(y) = x then
+      x
+    else
+      let y = y - 1 in
+      float_of_int(y)
+in			      
 
