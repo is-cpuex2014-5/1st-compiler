@@ -54,12 +54,12 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
   | Closure.Ftoi (x) -> Ans (Ftoi (x))
   | Closure.IfEq (x, y, e1, e2) -> 
       (match M.find x env with
-	 | Type.Bool | Type.Int -> Ans (IfEq (V(x), V (y), g env e1, g env e2))
+	 | Type.Bool | Type.Int -> Ans (IfEq (x, y, g env e1, g env e2))
 	 | Type.Float -> Ans (IfFEq (x, y, g env e1, g env e2))
 	 | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLT (x, y, e1, e2) ->
       (match M.find x env with
-	 | Type.Bool | Type.Int -> Ans (IfLT (V(x), V (y), g env e1, g env e2))
+	 | Type.Bool | Type.Int -> Ans (IfLT (x, y, g env e1, g env e2))
 	 | Type.Float -> Ans (IfFLT (x, y, g env e1, g env e2))
 	 | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let ((x, t1), e1, e2) ->

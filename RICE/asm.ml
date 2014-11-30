@@ -35,8 +35,8 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FStorei of Id.t * int
   | Comment of string
   (* virtual instructions *)
-  | IfEq of id_or_imm * id_or_imm * t * t
-  | IfLT of id_or_imm * id_or_imm * t * t
+  | IfEq of Id.t * Id.t * t * t
+  | IfLT of Id.t * Id.t * t * t
   | IfFEq of Id.t * Id.t * t * t
   | IfFLT of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)
@@ -99,9 +99,7 @@ let rec fv_exp = function
   | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) ->
       [x; y]
   | Store (x, y, z') | FStore (x, y, z') -> x :: y :: fv_id_or_imm z'
-  | IfEq (x', y', e1, e2) | IfLT (x', y', e1, e2)  -> 
-      (fv_id_or_imm x') @ fv_id_or_imm y' @ remove_and_uniq S.empty (fv e1 @ fv e2)
-  | IfFEq (x, y, e1, e2) | IfFLT (x, y, e1, e2) ->
+  | IfEq (x, y, e1, e2) | IfLT (x, y, e1, e2) | IfFEq (x, y, e1, e2) | IfFLT (x, y, e1, e2) ->
       x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2)
   | CallCls (x, ys, zs) -> x :: ys @ zs
   | CallDir (_, ys, zs) -> ys @ zs
@@ -164,10 +162,8 @@ let rec print_exp n oc e =
       | FStore(x, y, V(z)) ->  Printf.fprintf oc "FStore %s, %s, %s\n" x y z
       | FStore(x, y, C(i)) ->  Printf.fprintf oc "FStore %s, %s,  %d\n" x y i
       | Comment(s) -> Printf.fprintf oc "#%s\n" s
-      | IfEq (V(x), V(y), e1, e2) -> Printf.fprintf oc "IfEq %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
-      | IfEq (V(x), C(i), e1, e2) -> Printf.fprintf oc "IfEq %s %d\n" x i; print_t (n+1) oc e1; print_t (n+1) oc e2
-      | IfLT (V(x), V(y), e1, e2) -> Printf.fprintf oc "IfLT %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
-      | IfLT (V(x), C(i), e1, e2) -> Printf.fprintf oc "IfLT %s %d\n" x i; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfEq (x, y, e1, e2) -> Printf.fprintf oc "IfEq %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
+      | IfLT (x, y, e1, e2) -> Printf.fprintf oc "IfLT %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
       | IfFEq (x, y, e1, e2) -> Printf.fprintf oc "IfFEq %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
       | IfFLT (x, y, e1, e2) -> Printf.fprintf oc "IfFLT %s %s\n" x y; print_t (n+1) oc e1; print_t (n+1) oc e2
       | CallCls(x, is, fs) -> Printf.fprintf oc "Callcls %s, args : " x; List.iter (fun x -> Printf.fprintf oc "%s " x) is;  List.iter (fun x -> Printf.fprintf oc "%s " x) fs;  Printf.fprintf oc "\n"

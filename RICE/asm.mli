@@ -33,8 +33,8 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FStorei of Id.t * int
   | Comment of string
   (* virtual instructions *)
-  | IfEq of id_or_imm * id_or_imm * t * t
-  | IfLT of id_or_imm * id_or_imm * t * t
+  | IfEq of Id.t * Id.t * t * t
+  | IfLT of Id.t * Id.t * t * t
   | IfFEq of Id.t * Id.t * t * t
   | IfFLT of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)

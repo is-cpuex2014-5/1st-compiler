@@ -175,26 +175,18 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	 | [i; j] when (i + 1 = j) -> g' oc (NonTail(fregs.(0)), exp)
 	 | _ -> assert false);
       Printf.fprintf oc "\tret\n";
-  | (Tail, IfEq(V(x), V(y), e1, e2)) ->
+  | (Tail, IfEq(x, y, e1, e2)) ->
       g'_tail_if oc e1 e2 "beq" "bne" x y
- | (Tail, IfEq(V(x), C(y), e1, e2)) ->
-      g'_tail_if_imm oc e1 e2 "beq" "bne" x y
-  | (Tail, IfLT(V(x), V(y), e1, e2)) ->
+  | (Tail, IfLT(x, y, e1, e2)) ->
       g'_tail_if oc e1 e2 "blt" "bge" x y
-  | (Tail, IfLT(V(x), C(y), e1, e2)) ->
-      g'_tail_if_imm oc e1 e2 "blt" "bge" x y
   | (Tail, IfFEq(x, y, e1, e2)) ->
       g'_tail_if oc e1 e2 "bfeq" "bfne" x y
   | (Tail, IfFLT(x, y, e1, e2)) ->
       g'_tail_if oc e1 e2 "bflt" "bfge" x y
-  | (NonTail(z), IfEq(V(x), V(y), e1, e2)) ->
+  | (NonTail(z), IfEq(x, y, e1, e2)) ->
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne" x y
-  | (NonTail(z), IfEq(V(x), C(y), e1, e2)) ->
-      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "beq" "bne" x y
-  | (NonTail(z), IfLT(V(x), V(y), e1, e2)) ->
+  | (NonTail(z), IfLT(x, y, e1, e2)) ->
       g'_non_tail_if oc (NonTail(z)) e1 e2 "blt" "bge" x y
-  | (NonTail(z), IfLT(V(x), C(y), e1, e2)) ->
-      g'_non_tail_if_imm oc (NonTail(z)) e1 e2 "blt" "bge" x y
   | (NonTail(z), IfFEq(x, y, e1, e2)) ->
       g'_non_tail_if oc (NonTail(z)) e1 e2 "bfeq" "bfne" x y
   | (NonTail(z), IfFLT(x, y, e1, e2)) ->
@@ -244,17 +236,6 @@ and g'_tail_if oc e1 e2 b bn x y =
       Printf.fprintf oc "%s:\n" b_else;
       stackset := stackset_back;
       g oc (Tail, e1)
-and g'_tail_if_imm oc e1 e2 b bn x y =  
-  let b_else = Id.genid (bn ^ "_else") in
-     (if y = 0 then
-	Printf.fprintf oc "\t%si\t%s, $r00, %s\n" b x b_else
-      else
-	Printf.fprintf oc "\tli\t$r11, %d\n\t%si\t%s, $r11, %s\n" y b x b_else);
-    let stackset_back = !stackset in
-      g oc (Tail, e2);
-      Printf.fprintf oc "%s:\n" b_else;
-      stackset := stackset_back;
-      g oc (Tail, e1)
 and g'_non_tail_if oc dest e1 e2 b bn x y = 
   let b_else = Id.genid (bn ^ "_else") in
   let b_cont = Id.genid (bn ^ "_cont") in
@@ -263,23 +244,6 @@ and g'_non_tail_if oc dest e1 e2 b bn x y =
       g oc (dest, e2);
       let stackset1 = !stackset in
       Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
-	Printf.fprintf oc "%s:\n" b_else;
-	stackset := stackset_back;
-	g oc (dest, e1);
-	Printf.fprintf oc "%s:\n" b_cont;
-	let stackset2 = !stackset in
-	  stackset := S.inter stackset1 stackset2
-and g'_non_tail_if_imm oc dest e1 e2 b bn x y = 
-  let b_else = Id.genid (bn ^ "_else") in
-  let b_cont = Id.genid (bn ^ "_cont") in
-     (if y = 0 then
-	Printf.fprintf oc "\t%si\t%s, $r00, %s\n" b x b_else
-      else
-	Printf.fprintf oc "\tli\t$r11, %d\n\t%si\t%s, $r11, %s\n" y b x b_else);
-    let stackset_back = !stackset in
-      g oc (dest, e2);
-      let stackset1 = !stackset in
-	Printf.fprintf oc "\tbeqi\t$r00, $r00, %s\n" b_cont;
 	Printf.fprintf oc "%s:\n" b_else;
 	stackset := stackset_back;
 	g oc (dest, e1);

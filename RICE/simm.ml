@@ -3,6 +3,7 @@ open Asm
 let le16bit x = (-32768 <= x) && (x < 32768)
 let le17bit x = (-65536 <= x) && (x < 65536)
 let le21bit x = (-1048576 <= x) && (x < 1048576)
+let r0 = "$r00"
 let f0 = "$f00"
 
 let rec g env fenv = function (* 命令列の即値最適化 *)
@@ -38,38 +39,16 @@ and g' env fenv = function (* 各命令の即値最適化 *)
   | FStore(x, y, V(z)) when M.mem y env && M.mem z env  && le21bit (M.find y env  + M.find z env) ->
      FStorei(x, M.find y env  + M.find z env)
   | FStore(x, y, V(z)) when M.mem z env && le17bit (M.find z env) -> FStore(x, y, C(M.find z env))
-  | IfEq(x', V(y), e1, e2) when M.mem y env -> (*optimize if one of the reg is zero*)
-     if M.find y env = 0 then
-       IfEq(x', C(0), g env fenv e1, g env fenv e2)
-     else
-       IfEq(x', V(y), g env fenv e1, g env fenv e2)
-  | IfEq(V(x), y', e1, e2) when M.mem x env -> 
-     if M.find x env = 0 then
-       IfEq(C(0), y', g env fenv e1, g env fenv e2)
-     else
-       IfEq(V(x), y', g env fenv e1, g env fenv e2)
-  | IfLT(x', V(y), e1, e2) when M.mem y env -> 
-     if M.find y env = 0 then
-       IfLT(x', C(0), g env fenv e1, g env fenv e2)
-     else
-       IfLT(x', V(y), g env fenv e1, g env fenv e2)
-  | IfLT(V(x), y', e1, e2) when M.mem x env -> 
-     if M.find x env = 0 then
-       IfLT(C(0), y', g env fenv e1, g env fenv e2)
-     else
-       IfLT(V(x), y', g env fenv e1, g env fenv e2)
-  (*| IfLE(x, V(y), e1, e2) when M.mem y env ->
-      IfLE(x, C(M.find y env), g env fenv e1, g env fenv e2)
-  | IfGE(x, V(y), e1, e2) when M.mem y env -> 
-      IfGE(x, C(M.find y env), g env fenv e1, g env fenv e2)
-  | IfEq(x, V(y), e1, e2) when M.mem x env -> 
-      IfEq(y, C(M.find x env), g env fenv e1, g env fenv e2)
-  | IfLE(x, V(y), e1, e2) when M.mem x env -> 
-      IfGE(y, C(M.find x env), g env fenv e1, g env fenv e2)
-  | IfGE(x, V(y), e1, e2) when M.mem x env -> 
-      IfLE(y, C(M.find x env), g env fenv e1, g env fenv e2)*)
-  | IfEq(x, y', e1, e2) -> IfEq(x, y', g env fenv e1, g env fenv e2)
-  | IfLT(x, y', e1, e2) -> IfLT(x, y', g env fenv e1, g env fenv e2)
+  | IfEq(x, y, e1, e2) when M.mem x env  && (M.find x env) = 0 -> (*optimize if one of the reg is zero*)
+     g' env fenv (IfEq(r0, y, e1, e2))
+  | IfEq(x, y, e1, e2) when M.mem y env  && (M.find y env) = 0 ->
+     g' env fenv (IfEq(x, r0, e1, e2))
+  | IfEq(x, y, e1, e2) -> IfEq(x, y, g env fenv e1, g env fenv e2)
+  | IfLT(x, y, e1, e2) when M.mem x env  && (M.find x env) = 0 -> 
+     g' env fenv (IfLT(r0, y, e1, e2) )
+  | IfLT(x, y, e1, e2) when M.mem y env  && (M.find y env) = 0 ->
+     g' env fenv (IfLT(x, r0, e1, e2))
+  | IfLT(x, y, e1, e2) -> IfLT(x, y, g env fenv e1, g env fenv e2)
   | IfFEq(x, y, e1, e2) when S.mem x fenv -> g' env fenv (IfFEq(f0, y, e1, e2))
   | IfFEq(x, y, e1, e2) when S.mem y fenv -> g' env fenv (IfFEq(x, f0, e1, e2))
   | IfFEq(x, y, e1, e2) -> IfFEq(x, y, g env fenv e1, g env fenv e2)
