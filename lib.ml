@@ -60,9 +60,9 @@ let pi2 = pi *. 2.0 in
   if pi2 <= x then
     sin (x -. pi2)
   else if 0. < x then 
-    sin_sub x (-. 1.)
+    sin_sub x 1.
   else if (-. pi2) < x then
-    sin_sub (-. x) 1.
+    sin_sub (-. x) (-. 1.)
   else
     sin (x +. pi2)
 in

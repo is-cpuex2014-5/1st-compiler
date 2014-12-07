@@ -195,18 +195,18 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (Tail, CallCls(x, ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [(x, reg_cl)] ys zs;
       Printf.fprintf oc "\tload\t%s, %s, 0\n" (reg_sw) (reg_cl);
-      Printf.fprintf oc "\tmov\t%s, %s\n\tbeq\t$r0, $r0, %s, 0\n" cnt_reg (reg_sw) cnt_reg; 
+      Printf.fprintf oc "\tmov\t%s, %s\n\tbeq\t$r00, $r00, %s, 0\n" cnt_reg (reg_sw) cnt_reg; 
   | (Tail, CallDir(Id.L(x), ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
       Printf.fprintf oc "\tbeqi\t $r00, $r00, %s\n" x
   | (NonTail(a), CallCls(x, ys, zs)) ->
-      Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
+      (*Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp;*) 
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
 	(*Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
 	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
 	Printf.fprintf oc "\tload\t%s, %s, 0\n" cnt_reg (reg_cl);
-	Printf.fprintf oc "\taddil\t%s, %s, 16\n\tstore\t%s, %s, 0\n\tbeq\t$r0, $r0, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*callと同等*)
+	Printf.fprintf oc "\taddil\t%s, %s, 12\n\tstore\t%s, %s, 0\n\tbeq\t$r00, $r00, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*callと同等*)
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
 	(*Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
 	(if List.mem a allregs && a <> regs.(0) then 
@@ -215,7 +215,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	   Printf.fprintf oc "\tfadd\t%s, $f00, %s\n" (a) (fregs.(0)));
 	(*Printf.fprintf oc "\tstore\t%s, %s, -4\n"  reg_tmp reg_sp*) 
   | (NonTail(a), CallDir(Id.L(x), ys, zs)) -> 
-      Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp; 
+      (*Printf.fprintf oc "\tload\t%s, %s, -4\n" reg_tmp reg_sp;*) 
       g'_args oc [] ys zs;
       let ss = stacksize () in
 	(*Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
