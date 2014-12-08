@@ -1,5 +1,8 @@
 (* RICE assembly with a few virtual instructions *)
 
+let invflag = ref false
+let sqrtflag = ref false
+
 type id_or_imm = V of Id.t | C of int
 type t = (* 命令の列 *)
   | Ans of exp
@@ -21,7 +24,7 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | Store of Id.t * Id.t * id_or_imm
   | Loadi of int
   | Storei of Id.t * int
-  | FMov of Id.t  (*ftoi, itofがない状態*)
+  | FMov of Id.t  
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -44,6 +47,9 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 *)
   | Restore of Id.t (* スタック変数から値を復元 *)
+  | FInv of Id.t
+  | FSqrt of Id.t
+  | Write of Id.t
 type fundef =
     { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 *)
@@ -90,8 +96,8 @@ let fv_id_or_imm = function V (x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Li (_) | FLi (_) | SetL (_) | Loadi (_) | FLoadi (_) |
   Comment (_) | Restore (_) -> []
-  | Mov (x) | Neg (x) | Storei (x, _) | Itof(x) | Ftoi(x) |
-  FMov (x) | FNeg (x) |  FStorei (x, _) | Save (x, _) -> [x]
+  | Mov (x) | Neg (x) | Write(x) | Storei (x, _) | Itof(x) | Ftoi(x) | FInv(x) | 
+  FSqrt(x) | FMov (x) | FNeg (x) |  FStorei (x, _) | Save (x, _) -> [x]
   | Add (x, y') | Sub (x, y') -> x ::  fv_id_or_imm y'
   | Sll (x, y') | Srl (x, y') |Sla (x, y') |Sra (x, y') |
   Load (x, y') | FLoad (x, y') ->  

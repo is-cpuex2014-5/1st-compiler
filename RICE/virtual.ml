@@ -88,6 +88,18 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
   | Closure.AppCls (x, ys) ->
       let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
 	Ans (CallCls (x, int, float))
+  | Closure.AppDir(Id.L(x), (y :: _ as ys)) when x = "print_char" && List.length ys = 1 ->
+     Ans (Write(y))
+  | Closure.AppDir(Id.L(x), (y :: _ as ys)) when x = "sqrt" && List.length ys = 1 ->
+     if !Asm.sqrtflag then
+       Ans (FSqrt(y))  
+     else
+       Ans (CallDir (Id.L "sqrt", [], [y]))
+  | Closure.AppDir(Id.L(x), (y :: _ as ys)) when x = "finv" && List.length ys = 1 ->
+     if !Asm.invflag then
+       Ans (FInv(y)) 
+     else
+       Ans (CallDir (Id.L "inv", [], [y]))
   | Closure.AppDir (Id.L(x), ys) ->
       let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
 	Ans (CallDir (Id.L(x), int, float))

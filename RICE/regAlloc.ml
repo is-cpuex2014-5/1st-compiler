@@ -152,6 +152,9 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml2html: regal
   | IfFLT(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLT(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | CallCls(x, ys, zs) as exp -> g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs
   | CallDir(l, ys, zs) as exp -> g'_call dest cont regenv exp (fun ys zs -> CallDir(l, ys, zs)) ys zs
+  | Write(x) -> (Ans (Write (find x Type.Int regenv)), regenv)
+  | FSqrt(x) -> (Ans (FSqrt (find x Type.Float regenv)), regenv)
+  | FInv(x) -> (Ans (FInv (find x Type.Float regenv)), regenv)
   | Save(x, y) -> assert false
 and g'_if dest cont regenv exp constr e1 e2 = (* ifのレジスタ割り当て (caml2html: regalloc_if) *)
   let (e1', regenv1) = g dest cont regenv e1 in

@@ -7,7 +7,7 @@ let buffer = String.create 1024
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f(Cse.f (Beta.f e))))) in
+  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Cse.f (Beta.f e))))) in
   if e = e' then e else
   iter (n - 1) e'
 
@@ -59,10 +59,12 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
-     ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated")]
+     ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
+     ("-finv", Arg.Unit(fun () -> Asm.invflag := true), "use finv instruction");
+     ("-fsqrt", Arg.Unit(fun () -> Asm.sqrtflag := true), "use fsqrt instruction")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-finv] [-fsqrt] ...filenames without \".ml\"..." Sys.argv.(0));
   let fd_out = openfile (temp ^ ".ml") [O_WRONLY; O_CREAT; O_TRUNC] 0o666 in
   close fd_out;
   foutname := List.hd (List.rev !files);

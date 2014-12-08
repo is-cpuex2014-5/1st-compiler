@@ -142,6 +142,9 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(_), FStorei(x, y)) ->
       Printf.fprintf oc "\tfstorei\t%s, %d\n" x y 
   | (NonTail(_), Comment(s)) -> Printf.fprintf oc "#\t%s\n" s
+  | (NonTail(_), Write(x)) -> Printf.fprintf oc "\twrite\t%s\n" x
+  | (NonTail(x), FInv(y)) -> Printf.fprintf oc "\tfinv\t%s, %s\n" x y
+  | (NonTail(x), FSqrt(y)) -> Printf.fprintf oc "\tfsqrt\t%s, %s\n" x y
   (* 退避の仮想命令の実装 *)
   | (NonTail(_), Save(x, y))
       when List.mem x allregs && not (S.mem y !stackset) ->
@@ -158,7 +161,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), Restore(y)) ->
       assert (List.mem x allfregs);
       Printf.fprintf oc "\tfload\t%s, %s, %d\n" x reg_sp (offset y)   (* 末尾だったら計算結果を第一レジスタにセット *)
-  | (Tail, (Nop | Store _ | Storei _ |  FStore _ | FStorei _ |  Comment _ | Save _ as exp)) ->
+  | (Tail, (Nop | Store _ | Storei _ |  FStore _ | FStorei _ |  Comment _ | Save _ | Write _ as exp)) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Li _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Sll _ | Sla _ | Srl _ | Sra _ | 
@@ -166,7 +169,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g' oc (NonTail(regs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (FLi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |
-            FLoad _ | FLoadi _ | Itof _ as exp)) ->
+            FLoad _ | FLoadi _ | Itof _ |FInv _ | FSqrt _ as exp)) ->
       g' oc (NonTail(fregs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Restore(x) as exp)) ->

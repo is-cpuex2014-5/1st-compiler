@@ -19,7 +19,7 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | Store of Id.t * Id.t * id_or_imm
   | Loadi of int
   | Storei of Id.t * int
-  | FMov of Id.t  (*ftoi, itofがない状態*)
+  | FMov of Id.t  
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -42,9 +42,15 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 *)
   | Restore of Id.t (* スタック変数から値を復元 *)
+  | FInv of Id.t
+  | FSqrt of Id.t
+  | Write of Id.t
 type fundef =
     { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 type prog = Prog of (Id.l * float) list * fundef list * t
+
+val invflag : bool ref
+val sqrtflag : bool ref
 
 val fletd : Id.t * exp * t -> t (* shorthand of Let for float *)
 val seq : exp * t -> t (* shorthand of Let for unit *)

@@ -75,10 +75,10 @@ let rec g env = function (* 定数畳み込みルーチン本体 (caml2html: constfold_g) *)
           | IfEq (z, w, Int(i1), Int(i2)) when i1 = i -> IfEq (z, w, g env e1, g env e2)
           | IfEq (z, w, Int(i1), Int(i2)) when i2 = i -> IfEq (z, w, g env e2, g env e1)
           | IfEq (z, w, Int(i1), Int(i2)) -> g env e2
-          | IfLT (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e1
+          | IfLT (z, w, Int(i1), Int(i2)) when i1 = i && i2 = i -> g env e2
           | IfLT (z, w, Int(i1), Int(i2)) when i1 = i -> IfLT (z, w, g env e1, g env e2)
           | IfLT (z, w, Int(i1), Int(i2)) when i2 = i -> IfLT (z, w, g env e2, g env e1)
-          | IfLT (z, w, Int(i1), Int(i2)) -> g env e2
+          | IfLT (z, w, Int(i1), Int(i2)) -> g env e1
           | _ -> assert false)
   | IfLT (x, y, e1, e2) when memif x env && memi y env ->
       let i = findi y env in
