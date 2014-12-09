@@ -50,6 +50,7 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FInv of Id.t
   | FSqrt of Id.t
   | Write of Id.t
+  | Xor of Id.t * Id.t
 type fundef =
     { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 *)
@@ -102,7 +103,7 @@ let rec fv_exp = function
   | Sll (x, y') | Srl (x, y') |Sla (x, y') |Sra (x, y') |
   Load (x, y') | FLoad (x, y') ->  
    x :: fv_id_or_imm y'
-  | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) ->
+  | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) | Xor(x, y)->
       [x; y]
   | Store (x, y, z') | FStore (x, y, z') -> x :: y :: fv_id_or_imm z'
   | IfEq (x, y, e1, e2) | IfLT (x, y, e1, e2) | IfFEq (x, y, e1, e2) | IfFLT (x, y, e1, e2) ->

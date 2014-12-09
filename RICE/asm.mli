@@ -45,6 +45,7 @@ and exp = (* 一つ一つの命令に対応する式 *) (*抜けている命令も多い*) (*現状論理命
   | FInv of Id.t
   | FSqrt of Id.t
   | Write of Id.t
+  | Xor of Id.t * Id.t
 type fundef =
     { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 type prog = Prog of (Id.l * float) list * fundef list * t

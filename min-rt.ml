@@ -13,7 +13,7 @@
 (*NOMINCAML open Globals;;*)
 (*(*MINCAML*) let true = 1 in 
 (*MINCAML*) let false = 0 in *)
-(*MINCAML*) let rec xor x y = if x then not y else y in
+(*(*MINCAML*) let rec xor x y = if x then not y else y in*)
 
 (******************************************************************************
    ユーティリティー
@@ -657,7 +657,7 @@ let rec read_nth_object n =
       else ();
       
       true
-     )
+    )
   else
     false (* データの終了 *)
 in

@@ -143,6 +143,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       Printf.fprintf oc "\tfstorei\t%s, %d\n" x y 
   | (NonTail(_), Comment(s)) -> Printf.fprintf oc "#\t%s\n" s
   | (NonTail(_), Write(x)) -> Printf.fprintf oc "\twrite\t%s\n" x
+  | (NonTail(x), Xor(y, z)) -> Printf.fprintf oc "\txor\t%s, %s, %s\n" x y z
   | (NonTail(x), FInv(y)) -> Printf.fprintf oc "\tfinv\t%s, %s\n" x y
   | (NonTail(x), FSqrt(y)) -> Printf.fprintf oc "\tfsqrt\t%s, %s\n" x y
   (* 退避の仮想命令の実装 *)
@@ -165,7 +166,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (Li _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Sll _ | Sla _ | Srl _ | Sra _ | 
-            Load _ | Loadi _ | Ftoi _ as exp)) -> 
+            Load _ | Loadi _ | Ftoi _ | Xor _ as exp)) -> 
       g' oc (NonTail(regs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | (Tail, (FLi _ | FMov _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |

@@ -153,6 +153,7 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml2html: regal
   | CallCls(x, ys, zs) as exp -> g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs
   | CallDir(l, ys, zs) as exp -> g'_call dest cont regenv exp (fun ys zs -> CallDir(l, ys, zs)) ys zs
   | Write(x) -> (Ans (Write (find x Type.Int regenv)), regenv)
+  | Xor(x, y) -> (Ans (Xor (find x Type.Int regenv, find y Type.Int regenv)), regenv)
   | FSqrt(x) -> (Ans (FSqrt (find x Type.Float regenv)), regenv)
   | FInv(x) -> (Ans (FInv (find x Type.Float regenv)), regenv)
   | Save(x, y) -> assert false

@@ -90,6 +90,8 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
 	Ans (CallCls (x, int, float))
   | Closure.AppDir(Id.L(x), (y :: _ as ys)) when x = "print_char" && List.length ys = 1 ->
      Ans (Write(y))
+  | Closure.AppDir(Id.L(x), (y1 :: y2 :: _ as ys)) when x = "xor" && List.length ys = 2 ->
+     Ans (Xor(y1, y2))
   | Closure.AppDir(Id.L(x), (y :: _ as ys)) when x = "sqrt" && List.length ys = 1 ->
      if !Asm.sqrtflag then
        Ans (FSqrt(y))  
