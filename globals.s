@@ -413,70 +413,70 @@ n_reflections:
 # initialize some of the elements 
 	.global initialize	
 initialize:	# does not save regs bigger than $r04
-	li     	$r04, 236 #59 * 4
+	li     	$r04, 59
 	li     	$r05, objects
 	subi 	$r06, $r00, 1
 init_L1:		#do{
 	li     	$r01, 11 
 	li     	$r02, 0
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array #creates dummy
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	add     $r02, $r04, $r05
 	store   $r01, $r02, 0 #sets the a link to dummy
-	subi    $r04, $r04, 4
+	subi    $r04, $r04, 1
 	blti     $r06, $r04, init_L1 #}while(-1 < $r03) i.e. while($03>=0)
-	li     	$r04, 196 # 49 * 4
+	li     	$r04, 49 
 	li     	$r05, and_net
 init_L2:
 	li     	$r01, 1
         li	$r02, -1
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	add     $r02, $r04, $r05
 	store   $r01, $r02, 0
-	subi    $r04, $r04, 4
+	subi    $r04, $r04, 1
 	blti    $r06, $r04, init_L2
 	li     	$r01, 1
 	li     	$r02, -1
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	mov     $r02, $r01
 	li     	$r01, 1
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	store   $r01, $r00, or_net
 	li     	$r05, light_dirvec
 	li     	$r01, 3
 	li	$r02, 0
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	store	$r01, $r05, 0
 	li     	$r01, 60
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
-	store   $r01,  $r05, 4 
-	li 	$r04, 716 #179 * 4
+	subi  	$r14, $r14, 1
+	store   $r01,  $r05, 1 
+	li 	$r04, 179
 	li	$r05, reflections
 init_L3:
 	li     	$r01, 2
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call    create_array
-	subi  	$r14, $r14, 4
+	subi  	$r14, $r14, 1
 	mov     $r07, $r01
 	li     	$r01, 3
 	li     	$r02, 0
-	addil  	$r14, $r14, 4
+	addil  	$r14, $r14, 1
 	call   	create_array
-	subi  	$r14, $r14, 4
-	store  	$r07, $r01, 4
+	subi  	$r14, $r14, 1
+	store  	$r07, $r01, 1
 	add    	$r02, $r04, $r05
 	store  	$r01, $r02, 0
-	subi	$r04, $r04, 4
+	subi	$r04, $r04, 1
 	blti    $r06, $r04, init_L3
 	ret

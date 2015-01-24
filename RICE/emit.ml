@@ -21,8 +21,8 @@ let locate x =
     | y :: zs when x = y -> 0 :: List.map succ (loc zs)
     | y :: zs -> List.map succ (loc zs) in
     loc !stackmap
-let offset x = 4 * List.hd (locate x)
-let stacksize () = align ((List.length !stackmap + 1) * 4)
+let offset x = List.hd (locate x)
+let stacksize () = align (List.length !stackmap + 1)
 
 let reg r = (*$を消す作業*)
   if is_reg r 
@@ -208,10 +208,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
 	(*Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
-	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
+	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp (ss + 1);
 	Printf.fprintf oc "\tload\t%s, %s, 0\n" cnt_reg (reg_cl);
-	Printf.fprintf oc "\taddil\t%s, %s, 12\n\tstore\t%s, %s, 0\n\tbeq\t$r00, $r00, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*callと同等*)
-	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
+	Printf.fprintf oc "\taddil\t%s, %s, 3\n\tstore\t%s, %s, 0\n\tbeq\t$r00, $r00, %s\n" reg_tmp pc reg_tmp reg_sp cnt_reg; (*callと同等*)
+	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp (ss + 1);
 	(*Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
 	(if List.mem a allregs && a <> regs.(0) then 
 	   Printf.fprintf oc "\tmov\t%s, %s\n" (a) (regs.(0)) 
@@ -223,9 +223,9 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       g'_args oc [] ys zs;
       let ss = stacksize () in
 	(*Printf.fprintf oc "\tstore\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
-	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
+	Printf.fprintf oc "\taddil\t%s, %s, %d\n" reg_sp reg_sp (ss + 1);
 	Printf.fprintf oc "\tcall\t%s\n" x;
-	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp (ss + 4);
+	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp (ss + 1);
 	(*Printf.fprintf oc "\tload\t%s, %s, %d\n" reg_tmp reg_sp (ss - 4);*)
 	(if List.mem a allregs && a <> regs.(0) then
 	   Printf.fprintf oc "\tmov\t%s, %s\n" (a) (regs.(0))

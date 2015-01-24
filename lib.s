@@ -35,14 +35,14 @@ read_float:
 	add     $r01, $r01, $r02, 0
 	add     $r01, $r01, $r03, 0
 	add     $r01, $r01, $r04, 0
-	store	$r01, $r14, 4
-	fload	$f01, $r14, 4
+	store	$r01, $r14, 1
+	fload	$f01, $r14, 1
 	ret
 
 	.globl  print_float
 print_float:
-	fstore	$f01, $r14, 4
-	load	$r01, $r14, 4
+	fstore	$f01, $r14, 1
+	load	$r01, $r14, 1
 	.globl	print_int
 print_int:
 	srli	$r04, $01, 24
@@ -63,7 +63,7 @@ create_array_L0:
 	beqi	$r01, $r00, create_array_L1 #while(i != 0){
 	store	$r02, $r13, 0 #*hp = initial value ;
 	subi 	$r01, $r01, 1 # i-- ;
-	addil	$r13, $r13, 4 # hp += 4 ;
+	addil	$r13, $r13, 1 # hp += 1 ;
 	beqi	$r00, $r00, create_array_L0 #}
 create_array_L1:
 	mov	$r01, $r03 #return ret 
@@ -83,13 +83,13 @@ sqrt: # sqrt by Newton's method(N = 3, using reciprocal of the root)
 	fload 	$f03, $r00, sqrt_D0 
 	fload	$f04, $r00, sqrt_D1
 	fload	$f05, $r00, sqrt_D2
-	fstore  $f01, $r14, 4
-	load	$r02, $r14, 4
+	fstore  $f01, $r14, 1
+	load	$r02, $r14, 1
 	load 	$r03, $r00, sqrt_D0
 	srli    $r02, $r02, 1
 	sub     $r02, $r03, $r02   # x0 = m - (u32of(x) >> 1);	
-        store   $r02, $r14, 4
-	fload	$f02, $r14, 4
+        store   $r02, $r14, 1
+	fload	$f02, $r14, 1
 	fmul    $f04, $f01, $f04   #  y = 0.5 * x;
 	fmul    $f03, $f02, $f04   # 3 times
 	fmul    $f03, $f02, $f03
@@ -116,20 +116,20 @@ finv_D3:
 	.float	2.8235294          #  48.0 / 17.0
 	.globl finv
 finv:
-	fstore	$f01, $r14, 4
-	load	$r01, $r14, 4
+	fstore	$f01, $r14, 1
+	load	$r01, $r14, 1
 	srli    $r02, $r01, 23
 	sub     $r02, $r00, $r02	# sign($f02) = sign($f01);
 	addil   $r02, $r02, 253		# exponent($f02) = 253 - exponent($f01);
 	slli    $r02, $r02, 23          # fraction($f02) = 0;
-	store	$r02, $r14, 8
-	fload	$f02, $r14, 8
+	store	$r02, $r14, 2
+	fload	$f02, $r14, 2
 	load	$r03, $r00, finv_D0
 	slli    $r01, $r01, 9
 	srli 	$r01, $r01, 9           # sign($f01) = 0;
 	add     $r01, $r01, $r03        # exponent($f01) = 126;
-	store   $r01, $r14, 4
-	fload   $f01, $r14, 4
+	store   $r01, $r14, 1
+	fload   $f01, $r14, 1
 	fload   $f03, $r00, finv_D2
 	fload   $f04, $r00, finv_D3
 	fmul    $f03, $f01, $f03          # // initial guess
