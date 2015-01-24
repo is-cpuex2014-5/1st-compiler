@@ -30,5 +30,5 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 val fv : t -> S.t
 val f : Syntax.t -> t
-(*val p : out_channel -> t -> t*)
+val p : out_channel -> t -> t
 
