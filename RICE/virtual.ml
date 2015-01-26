@@ -128,19 +128,17 @@ let rec g env = function (* 式の仮想マシンコード生成 *)
 	     if not (S.mem x s) then load 
 	     else Let ((x, t), Load (y, C (offset)), load)) in
 	load
-  | Closure.Get (x, y) -> (* 配列の読み出し *) 
-      let offset = Id.genid "o" in  
+  | Closure.Get (x, y) -> (* 配列の読み出し *)  
 	(match M.find x env with
 	   | Type.Array (Type.Unit) -> Ans (Nop)
-	   | Type.Array (Type.Float) -> Ans (FLoad (x, V (offset)))
-	   | Type.Array (_) ->   Ans (Load (x, V (offset)))
+	   | Type.Array (Type.Float) -> Ans (FLoad (x, V (y)))
+	   | Type.Array (_) ->   Ans (Load (x, V (y)))
 	   | _ -> assert false)
   | Closure.Put (x, y, z) ->
-      let offset = Id.genid "o" in 
 	(match M.find x env with
 	   | Type.Array (Type.Unit) -> Ans (Nop)
-	   | Type.Array (Type.Float) -> Ans (FStore (z, x, V (offset))) 
-	   | Type.Array (_) -> Ans (Store (z, x, V (offset))) 
+	   | Type.Array (Type.Float) -> Ans (FStore (z, x, V (y))) 
+	   | Type.Array (_) -> Ans (Store (z, x, V (y))) 
 	   | _ -> assert false)
   | Closure.ExtArray (Id.L(x)) -> Ans(SetL(Id.L(x)))
   | Closure.ExtTuple (Id.L(x)) -> Ans(SetL(Id.L(x)))

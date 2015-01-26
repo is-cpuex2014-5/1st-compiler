@@ -114,8 +114,8 @@ finv_D2:
 	.float  -1.8823529          # -32.0 / 17.0
 finv_D3:
 	.float	2.8235294          #  48.0 / 17.0
-	.globl finv
-finv:
+	.globl inv
+inv:
 	fstore	$f01, $r14, 1
 	load	$r01, $r14, 1
 	srli    $r02, $r01, 23

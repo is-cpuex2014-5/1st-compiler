@@ -17,10 +17,10 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
   Emit.f outchan
     (RegAlloc.f
        (Simm.f
-	  (Asm.p' debugchan
+	  (*(Asm.p' debugchan*)
 	  (Virtual.f
 	     (Closure.f
-		(KNormal.p debugchan
+		(*(KNormal.p debugchan*)
 		(iter !limit
 		   ((*KNormal.p debugchan*)
 		   (Alpha.f
@@ -28,7 +28,7 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
 		      (KNormal.f
 		      (Syntax.p debugchan
 			 (Typing.f
-			    (Parser.exp Lexer.token l))))))))))))))
+			    (Parser.exp Lexer.token l))))))))))))
 
 let string s = lexbuf Pervasives.stdout Pervasives.stderr (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
