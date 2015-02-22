@@ -34,6 +34,7 @@ let add_v v v_info g =
     M.add v { succs = M.empty; preds = M.empty; info = v_info } g
 (* fails if v is not in g *)
 let remove_v v g = 
+  assert(M.mem v g);
   let { succs = ss; preds = ps } = M.find v g in
   (* removes v from preds of the adjoint vertices *)
   let g' = M.fold
@@ -65,10 +66,12 @@ let in_deg v graph = M.cardinal (M.find v graph).preds
 
 (* fails if u and v are not in g *)
 let mem_e u v g = 
+  assert (M.mem u g && M.mem v g);
   M.mem u (M.find v g).preds && M.mem u (M.find v g).preds
 
 (* fails if u and v are not in g *)
 let add_e u v e g = 
+  assert (M.mem u g && M.mem v g);
   let g' = 
     let n = M.find u g in
     M.add u { n with succs = M.add u e n.succs } g 
@@ -77,6 +80,7 @@ let add_e u v e g =
   M.add v { n with preds = M.add v e n.preds } g'
 (* fails if u and v are not in g *)
 let remove_e u v g = 
+  assert (M.mem u g && M.mem v g);
   let g' = 
     let n = M.find u g in
     M.add u { n with succs = M.remove v n.succs } g
@@ -86,6 +90,7 @@ let remove_e u v g =
 
 (* fails if u and v are not in g *)
 let find_e u v g = 
+  assert (M.mem u g && M.mem v g);
   let n = M.find u g in
   M.find v n.succs 
 		 
