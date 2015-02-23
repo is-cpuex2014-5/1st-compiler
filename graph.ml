@@ -74,10 +74,10 @@ let add_e u v e g =
   assert (M.mem u g && M.mem v g);
   let g' = 
     let n = M.find u g in
-    M.add u { n with succs = M.add u e n.succs } g 
+    M.add u { n with succs = M.add v e n.succs } g 
   in
   let n = M.find v g' in
-  M.add v { n with preds = M.add v e n.preds } g'
+  M.add v { n with preds = M.add u e n.preds } g'
 (* fails if u and v are not in g *)
 let remove_e u v g = 
   assert (M.mem u g && M.mem v g);
@@ -110,4 +110,24 @@ let fold f g init = M.fold (fun v n acc -> f v n.info acc) g init
 let iter f g = M.iter (fun v n -> f v n.info) g    
 let fold_e f g init = M.fold (fun u n acc -> M.fold (fun v e acc -> f u v e acc) n.succs acc) g init
 
+(* assumes that the graph is a DAG                *
+ * returns a list of vertices in topoloical order *)
+
+let top_sort g = 
+  let vs = ref [] in
+  let vis = ref S.empty in
+  let rec dfs stack v = 
+    if not (S.mem v !vis) then (
+      vis := S.add v !vis;
+      let stack = S.add v stack in
+      M.iter (fun w _ -> dfs stack w) (M.find v g).succs;
+      vs := v :: !vs)
+    else if S.mem v stack then 
+      failwith "error: a loop has been found during topological sort\n"
+  in
+  M.iter (fun v _ -> dfs S.empty v) g;
+        !vs
+
+
 end
+
