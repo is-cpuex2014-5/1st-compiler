@@ -86,7 +86,7 @@ let remove_e u v g =
     M.add u { n with succs = M.remove v n.succs } g
   in
   let n = M.find v g' in
-  M.add v { n with preds = M.remove u n.preds } g
+  M.add v { n with preds = M.remove u n.preds } g'
 
 (* fails if u and v are not in g *)
 let find_e u v g = 
