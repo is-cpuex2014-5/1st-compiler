@@ -40,14 +40,14 @@ let remove_v v g =
   let g' = M.fold
 	     (fun u _ g -> 
 	      let n = M.find u g in
-	      M.add u { n  with preds = M.remove u n.preds } g)
+	      M.add u { n  with preds = M.remove v n.preds } g)
 	     ss g
   in
   (* removes v from succs of the adjoint vertices *)
   let g'' = M.fold
 	     (fun u _ g -> 
 	      let n = M.find u g in
-	      M.add u { n  with succs = M.remove u n.succs } g)
+	      M.add u { n  with succs = M.remove v n.succs } g)
 	     ps g'
   in 
   M.remove v g''
@@ -64,11 +64,10 @@ let in_deg v graph = M.cardinal (M.find v graph).preds
 
 (* operations for the edges *) 
 
-(* fails if u and v are not in g *)
 let mem_e u v g = 
-  assert (M.mem u g && M.mem v g);
-  M.mem u (M.find v g).preds && M.mem u (M.find v g).preds
-
+  if (M.mem u g && M.mem v g)
+  then M.mem u (M.find v g).preds && M.mem u (M.find v g).preds
+  else false
 (* fails if u and v are not in g *)
 let add_e u v e g = 
   assert (M.mem u g && M.mem v g);
@@ -93,7 +92,16 @@ let find_e u v g =
   assert (M.mem u g && M.mem v g);
   let n = M.find u g in
   M.find v n.succs 
-		 
+
+let edges g = 
+  M.fold 
+    (fun u n acc -> 
+	  (M.fold 
+	     (fun v _ acc' -> (u, v) :: acc')
+	     n.succs
+	     []) @ acc)
+    g []
+		     
 let preds v g =
   M.fold (fun v _ acc -> v :: acc) (M.find v g).preds []
 let succs v g =
