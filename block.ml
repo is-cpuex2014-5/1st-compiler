@@ -98,49 +98,82 @@ let string_of_inst = function
   | Li(i) -> "li " ^ string_of_int i
   | FLi(L(l)) -> "fli " ^ l
   | SetL(L(l)) -> "SetL " ^ l (*出力される命令と異なる*)
-  | Mov(x) -> "mov\t" ^ x
-  | Neg(x) -> "neg\t" ^ x
-  | Add(x, y') -> "add\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Sub(x, y') -> "sub\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Sll(x, y') -> "sll\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Srl(x, y') -> "srl\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Sla(x, y') -> "sla\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Sra(x, y') -> "sra\t" ^ x ^ ", " ^ string_of_id_or_imm y'
-  | Load(x, y') -> "load\t" ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Mov(x) -> "mov " ^ x
+  | Neg(x) -> "neg " ^ x
+  | Add(x, y') -> "add " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Sub(x, y') -> "sub " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Sll(x, y') -> "sll " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Srl(x, y') -> "srl " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Sla(x, y') -> "sla " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Sra(x, y') -> "sra " ^ x ^ ", " ^ string_of_id_or_imm y'
+  | Load(x, y') -> "load " ^ x ^ ", " ^ string_of_id_or_imm y'
   | Store(x, y, z') -> 
-     "store\t" ^ x ^ ", " ^ y ^ ", " ^ string_of_id_or_imm z'
-  | Loadi(i) -> "loadi\t" ^ string_of_int i
-  | Storei(x, i) -> "storei\t" ^ x ^ " " ^ string_of_int i
-  | FMov(x) -> "fMov\t" ^ x
-  | FNeg(x) -> "fneg\t" ^ x
-  | FAdd(x, y) -> "fadd\t" ^ x ^ ", " ^ y
-  | FSub(x, y) -> "fsub\t" ^ x ^ ", " ^ y
-  | FMul(x, y) -> "fmul\t" ^ x ^ ", " ^ y
-  | FDiv(x, y) -> "fdiv\t" ^ x ^ ", " ^ y
-  | Itof(x) -> "itof\t" ^ x
-  | Ftoi(x) -> "ftoi\t" ^ x
-  | FLoad(x, y') -> "fload\t" ^ x ^ ", " ^ string_of_id_or_imm y'
+     "store " ^ x ^ ", " ^ y ^ ", " ^ string_of_id_or_imm z'
+  | Loadi(i) -> "loadi " ^ string_of_int i
+  | Storei(x, i) -> "storei " ^ x ^ " " ^ string_of_int i
+  | FMov(x) -> "fMov " ^ x
+  | FNeg(x) -> "fneg " ^ x
+  | FAdd(x, y) -> "fadd " ^ x ^ ", " ^ y
+  | FSub(x, y) -> "fsub " ^ x ^ ", " ^ y
+  | FMul(x, y) -> "fmul " ^ x ^ ", " ^ y
+  | FDiv(x, y) -> "fdiv " ^ x ^ ", " ^ y
+  | Itof(x) -> "itof " ^ x
+  | Ftoi(x) -> "ftoi " ^ x
+  | FLoad(x, y') -> "fload " ^ x ^ ", " ^ string_of_id_or_imm y'
   | FStore(x, y, z') -> 
-     "fstore\t" ^ x ^ ", " ^ y ^ ", " ^ string_of_id_or_imm z'
-  | FLoadi(i) -> "floadi\t" ^ string_of_int i
-  | FStorei(x, i) -> "fstorei\t" ^ x ^ " " ^ string_of_int i
+     "fstore " ^ x ^ ", " ^ y ^ ", " ^ string_of_id_or_imm z'
+  | FLoadi(i) -> "floadi " ^ string_of_int i
+  | FStorei(x, i) -> "fstorei " ^ x ^ " " ^ string_of_int i
   | Comment(x) -> "#" ^ x
   | IfEq(x, y) -> x ^ " = " ^ y (* 発行される命令とは異なる *)
   | IfLT(x, y) -> x ^ " < " ^ y
   | IfFEq(x, y) -> x ^ " =. " ^ y (* 発行される命令とは異なる *)
   | IfFLT(x, y) -> x ^ " <. " ^ y
-  | CallCls _ -> "callcls" (* TODO *)
-  | CallDir _ -> "calldir"
-  | Save(x, y) -> "save\t" ^ x ^ ", " ^ y
-  | Restore(x) -> "restore\t" ^ x
-  | FInv(x) -> "finv\t" ^ x
-  | FSqrt(x) -> "fsqrt\t" ^ x
-  | Write(x) -> "write\t" ^ x
-  | Xor(x, y) -> "xor\t" ^ x ^ ", " ^ y
+  | CallCls _ -> "callcls"  (* TODO *)
+  | CallDir(L(l), _, _) -> "calldir " ^ l (* TODO *)
+  | Save(x, y) -> "save " ^ x ^ ", " ^ y
+  | Restore(x) -> "restore " ^ x
+  | FInv(x) -> "finv " ^ x
+  | FSqrt(x) -> "fsqrt " ^ x
+  | Write(x) -> "write " ^ x
+  | Xor(x, y) -> "xor " ^ x ^ ", " ^ y
   | Jmp -> "jmp"
-  | Goto(L(l)) -> "goto\t" ^ l
+  | Goto(L(l)) -> "goto " ^ l
   | Ret -> "ret"
- 
+	     
+let string_of_stmt { sid = sid; inst = e; use = use; def = def } =
+  sid ^ ": " ^
+    (if def = [] 
+     then ""
+     else
+       String.concat ", "
+	 (List.map
+	    (fun (x, t) -> x ^ " : " ^ Type.string_of_type t)
+            def) ^
+	   " = ") ^ 
+      string_of_inst e
+
+let string_of_block b stmts =
+  b ^ ":\n" ^
+  List.fold_left (fun res stmt -> res ^ "\n" ^ string_of_stmt stmt) "" stmts
+
+let sanitize b = 
+  let r = Str.regexp "\\." in
+  Str.global_replace r "_" b
+
+let output_for_graphviz oc cfg =
+  Printf.fprintf oc "digraph cfg {\n";
+  Printf.fprintf oc "node [shape=box];\n";
+  CFG.fold
+    (fun b block () ->
+     Printf.fprintf oc "%s [label=\"%s\"];\n" (sanitize b) (String.escaped (string_of_block b block)))
+     cfg ();
+  CFG.fold_e
+    (fun u v e () ->
+     let tag = match e with None -> "" | Some(Then) -> "then" | Some(Else) -> "else"  in
+     Printf.fprintf oc "%s -> %s [label=\"%s\"];\n" (sanitize u) (sanitize v) tag) cfg ();
+  Printf.fprintf oc "}\n"
+
 (* end of debug *)
 
 let fv_id_or_imm = function Asm.V (x) -> [x] | _ -> []
@@ -269,7 +302,8 @@ let rec g data fname body  =
                  let cfg3 = CFG.add_e v'' func.head None cfg'' in (* jump to the head of the function *)
                    (null, cfg3)
              | _ -> concat_asm_exp (CallDir(L(l), args, fargs)))
-	| Asm.CallCls _ -> failwith "TODO"
+	| Asm.CallCls _ -> Printf.fprintf stderr "TODO\n"; assert false
+	| Asm.Comment _ -> Printf.fprintf stderr "TODO\n"; assert false
        )
     | Asm.Let((x, t), e1', e2) -> 
        let (v', cfg') = h env v cfg [x, t] false (Asm.Ans(e1')) in
@@ -300,8 +334,6 @@ let rec g data fname body  =
   h M.empty head cfg [fname ^ "_ret", func.ret] true body
 
 let f (Asm.Prog(xs, ys, e)) = 
-  let data = M.empty in 
-  let body_data = M.empty in
   let (data, body_data) = 
     List.fold_left 
       (fun (data, body_data) { Asm.name = L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = ret } -> 
