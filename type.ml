@@ -15,12 +15,14 @@ let rec string_of_type  = function
   | Bool ->  "bool"
   | Int -> "int"
   | Float -> "float"
-  | Fun (l, t) -> "fun " ^
-		    (List.fold_left (fun x y -> x ^ (string_of_type y) ^  "  -> ") "" l) ^
-		      string_of_type  t
-  | Tuple l ->  "tuple (" ^
-	       (List.fold_left (fun x y -> x ^ (string_of_type  y) ^ " ") "" l) ^
-		 ")"
+  | Fun (l, t) -> 
+     String.concat " -> " (List.map string_of_type  l) ^ 
+     " -> " ^ 
+     string_of_type  t
+  | Tuple l ->  
+     "tuple (" ^
+     String.concat ", " (List.map string_of_type  l) ^
+     ")"
   | Array t -> "array (" ^ (string_of_type  t) ^ ")"
   | Var r -> match !r with
 	     | None -> "tvar"
