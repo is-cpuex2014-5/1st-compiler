@@ -163,7 +163,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 	unify Type.Int (g env e2);
 	Type.Unit
     | Pos(p, e1) ->errorpos := p ; g env e1
-  with Unify(t1, t2) -> failwith ("Type error : conflict between " ^ (Type.sprint t1) ^ " and " ^ (Type.sprint t2)  ^
+  with Unify(t1, t2) -> failwith ("Type error : conflict between " ^ (Type.string_of_type t1) ^ " and " ^ (Type.string_of_type t2)  ^
 				    ". " ^ (Pos.sprint !errorpos))
 
 let f e =
