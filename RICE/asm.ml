@@ -83,6 +83,9 @@ let pc = "$r15"
 
 (* is_reg : Id.t -> bool *)
 let is_reg x = x.[0] = '$'
+let reg_type_of x = 
+  assert (is_reg x);
+  if x.[1] = 'f' then Type.Float else Type.Int
 
 (* remove_and_uniq : S.t -> Id.t list -> Id.t list *)
 let rec remove_and_uniq xs = function 

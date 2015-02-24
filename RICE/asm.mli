@@ -70,6 +70,7 @@ val cnt_reg : Id.t
 val pc : Id.t
 
 val is_reg : Id.t -> bool
+val reg_type_of : Id.t -> Type.t
 
 val fv : t -> Id.t list
 val concat : t -> Id.t * Type.t -> t -> t
