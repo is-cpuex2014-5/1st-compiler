@@ -86,6 +86,10 @@ let is_reg x = x.[0] = '$'
 let reg_type_of x = 
   assert (is_reg x);
   if x.[1] = 'f' then Type.Float else Type.Int
+let ret_reg_of = function
+  | Type.Float -> "$f01"
+  | _ -> "$r01"
+
 
 (* remove_and_uniq : S.t -> Id.t list -> Id.t list *)
 let rec remove_and_uniq xs = function 
