@@ -1,3 +1,11 @@
+(* this graph module is used to construct the CFG.    *
+ * it is more general than the functions in block.ml. *
+ * at first this module was used to structure the     *
+ * inference graph, but a diffrent structure is used  *
+ * in gColoring.ml. therefore currently, this is only *
+ * used to    construct a CFG                         *)
+
+(***** data structure and types *****) 
 module type GraphType =
 sig
   type vertex
@@ -18,13 +26,12 @@ module S = Set.Make(struct type t = GT.vertex
 type node = { succs : GT.edge M.t; preds : GT.edge M.t; info : GT.v_info; }
 type t = node M.t
 
-
+(***** basic operations *****)
 let empty : t = M.empty 
 let is_empty : t -> bool  = M.is_empty
-
 let size : t -> int = M.cardinal
 
-(* operations for the vertices *)
+(****** operations for the vertices ******)
 
 let mem : GT.vertex -> t -> bool = M.mem 
 let add_v v v_info g =
@@ -52,17 +59,13 @@ let remove_v v g =
   in 
   M.remove v g''
   
-
 (* returns v_info not vertex. fails if v is not ing *)
 let find v graph = (M.find v graph).info
-
-let vertices : t -> GT.vertex list -> GT.vertex list = 
-  M.fold (fun v _ xs -> v :: xs)
 
 let out_deg v graph = M.cardinal (M.find v graph).succs
 let in_deg v graph = M.cardinal (M.find v graph).preds
 
-(* operations for the edges *) 
+(****** operations for the edges ******) 
 
 let mem_e u v g = 
   if (M.mem u g && M.mem v g)
@@ -93,34 +96,13 @@ let find_e u v g =
   let n = M.find u g in
   M.find v n.succs 
 
-let edges g = 
-  M.fold 
-    (fun u n acc -> 
-	  (M.fold 
-	     (fun v _ acc' -> (u, v) :: acc')
-	     n.succs
-	     []) @ acc)
-    g []
-		     
-let preds v g =
-  M.fold (fun v _ acc -> v :: acc) (M.find v g).preds []
-let succs v g =
-  M.fold (fun v _ acc -> v :: acc) (M.find v g).succs []
+(***** to list *****)
 
-
-let reverse g =
-  M.map (fun p -> { p with succs = p.preds; preds = p.succs }) g
-
-(* f : vertex -> v_info -> v_info *)
-let map f g =
-  M.mapi (fun v n -> { n with info = f v n.info }) g
-let fold f g init = M.fold (fun v n acc -> f v n.info acc) g init
-let iter f g = M.iter (fun v n -> f v n.info) g    
-let fold_e f g init = M.fold (fun u n acc -> M.fold (fun v e acc -> f u v e acc) n.succs acc) g init
+let vertices g = 
+  M.fold (fun v _ xs -> v :: xs) g []
 
 (* assumes that the graph is a DAG                *
  * returns a list of vertices in topoloical order *)
-
 let top_sort g = 
   let vs = ref [] in
   let vis = ref S.empty in
@@ -136,6 +118,33 @@ let top_sort g =
   M.iter (fun v _ -> dfs S.empty v) g;
         !vs
 
+let edges g = 
+  M.fold 
+    (fun u n acc -> 
+     (M.fold 
+	(fun v _ acc' -> (u, v) :: acc')
+	n.succs
+	[]) @ acc)
+    g []
+		     
+let preds v g =
+  M.fold (fun v _ acc -> v :: acc) (M.find v g).preds []
+let succs v g =
+  M.fold (fun v _ acc -> v :: acc) (M.find v g).succs []
+
+
+let reverse g =
+  M.map (fun p -> { p with succs = p.preds; preds = p.succs }) g
+
+
+(***** maps folds iters *****)
+(* f : vertex -> v_info -> v_info *)
+let map f g =
+  M.mapi (fun v n -> { n with info = f v n.info }) g
+let fold f g init = M.fold (fun v n acc -> f v n.info acc) g init
+let iter f g = M.iter (fun v n -> f v n.info) g    
+let fold_e f g init = M.fold (fun u n acc -> M.fold (fun v e acc -> f u v e acc) n.succs acc) g init
+let expand (f : GT.vertex -> GT.edge -> 'a -> 'a) v g init = M.fold f (M.find v g).succs init
 
 end
 
