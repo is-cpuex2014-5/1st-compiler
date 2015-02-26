@@ -5,6 +5,8 @@
  * in gColoring.ml. therefore currently, this is only *
  * used to    construct a CFG                         *)
 
+(* TODO: write a graph.mli *)
+
 (***** data structure and types *****) 
 module type GraphType =
 sig
@@ -101,6 +103,26 @@ let find_e u v g =
 let vertices g = 
   M.fold (fun v _ xs -> v :: xs) g []
 
+let preds v g =
+  M.fold (fun v _ acc -> v :: acc) (M.find v g).preds []
+let succs v g =
+  M.fold (fun v _ acc -> v :: acc) (M.find v g).succs []
+
+let rec reachables v g = 
+  let rec dfs v = 
+    let rec go v set = 
+      if not (S.mem v set) then
+	let set = S.add v set in 
+	List.fold_right 
+	  (fun v set -> go v set)
+	  (succs v g) set 
+      else set
+    in
+    go v S.empty
+  in 
+  let set = dfs v in
+  S.fold (fun x acc -> x :: acc) set []
+
 (* assumes that the graph is a DAG                *
  * returns a list of vertices in topoloical order *)
 let top_sort g = 
@@ -127,10 +149,6 @@ let edges g =
 	[]) @ acc)
     g []
 		     
-let preds v g =
-  M.fold (fun v _ acc -> v :: acc) (M.find v g).preds []
-let succs v g =
-  M.fold (fun v _ acc -> v :: acc) (M.find v g).succs []
 
 
 let reverse g =

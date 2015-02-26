@@ -7,6 +7,7 @@ exception Error of t * Type.t * Type.t
 
 let extenv = ref M.empty
 let errorpos = ref Pos.init
+let ret_type = ref Type.Unit
 
 (* for pretty printing (and type normalization) *)
 let rec deref_typ = function (* 型変数を中身でおきかえる関数 (caml2html: typing_deref) *)
@@ -169,6 +170,6 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 let f e =
   extenv := M.add_list [
 			("finv", (Type.Fun ([Type.Float], Type.Float)));] M.empty;
-  ignore (g M.empty e);
+  ret_type := deref_typ (g M.empty e);
   extenv := M.map deref_typ !extenv;
   deref_term e

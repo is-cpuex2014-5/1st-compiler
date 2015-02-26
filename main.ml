@@ -14,8 +14,10 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
 let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  Emit.f outchan
-    (RegAlloc.f
+  (*Emit.f outchan
+    (RegAlloc.f*)
+
+  let Block.Prog(_, fdef) as prog = (Block.f
        (Simm.f
 	  (*(Asm.p' debugchan*)
 	  (Virtual.f
@@ -28,7 +30,21 @@ let lexbuf outchan debugchan l = (* バッファをコンパイルしてチャンネルへ出力する
 		      (KNormal.f
 		      (Syntax.p debugchan
 			 (Typing.f
-			    (Parser.exp Lexer.token l))))))))))))
+			    (Parser.exp Lexer.token l)))))))))))) in 
+  M.iter (fun f x -> Printf.fprintf debugchan "***** %s ****\n" f;
+		     Block.output_for_graphviz debugchan x.Block.blocks) fdef;
+  Printf.fprintf Pervasives.stderr "liveness analysis...\n";
+  let live_infos = M.map (fun x  -> Liveness.f  x.Block.blocks) fdef in
+  M.iter (fun f x -> Printf.fprintf debugchan "******%s*****\n%s" f (Liveness.string_of_liveness x)) live_infos;
+  Printf.fprintf debugchan "\n\n";
+   M.iter (fun f x -> Printf.fprintf debugchan "***** %s ****\n" f;
+		     GColoring.output_for_graphviz debugchan (GColoring.build Type.Int x)) fdef;
+  let Block.Prog(_, fdef) as prog' = GRegAlloc.f prog in
+  M.iter (fun f x -> Printf.fprintf debugchan "***** %s ****\n" f;
+		     Block.output_for_graphviz debugchan x.Block.blocks) fdef;
+  GEmit.f outchan prog'
+
+	 
 
 let string s = lexbuf Pervasives.stdout Pervasives.stderr (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 

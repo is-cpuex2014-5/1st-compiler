@@ -1,5 +1,6 @@
+(* constructs the actual cfg           *
+ * TODO: refactor and clean the code   *)
 type id_or_imm = Asm.id_or_imm
-(* Jmp 必要?*)
 type t = 
   | Nop
   | Li of int
@@ -27,7 +28,7 @@ type t =
   | Ftoi of Id.t
   | FLoad of Id.t * id_or_imm
   | FStore of Id.t * Id.t * id_or_imm
-  | FLoadi of int (* do we really need floadi and fstorei ??*)
+  | FLoadi of int 
   | FStorei of Id.t * int
   | Comment of string
   (* virtual instructions *)
@@ -46,6 +47,7 @@ type t =
   | Xor of Id.t * Id.t
   | Jmp
   | Goto of Id.l
+  | Entry
   | Ret
 
 type stmt = {
@@ -96,8 +98,8 @@ let string_of_id_or_imm = function
 let string_of_inst = function 
   | Nop -> "nop"
   | Li(i) -> "li " ^ string_of_int i
-  | FLi(L(l)) -> "fli " ^ l
-  | SetL(L(l)) -> "SetL " ^ l (*出力される命令と異なる*)
+  | FLi(Id.L(l)) -> "fli " ^ l
+  | SetL(Id.L(l)) -> "SetL " ^ l 
   | Mov(x) -> "mov " ^ x
   | Neg(x) -> "neg " ^ x
   | Add(x, y') -> "add " ^ x ^ ", " ^ string_of_id_or_imm y'
@@ -111,7 +113,7 @@ let string_of_inst = function
      "store " ^ x ^ ", " ^ y ^ ", " ^ string_of_id_or_imm z'
   | Loadi(i) -> "loadi " ^ string_of_int i
   | Storei(x, i) -> "storei " ^ x ^ " " ^ string_of_int i
-  | FMov(x) -> "fMov " ^ x
+  | FMov(x) -> "fmov " ^ x
   | FNeg(x) -> "fneg " ^ x
   | FAdd(x, y) -> "fadd " ^ x ^ ", " ^ y
   | FSub(x, y) -> "fsub " ^ x ^ ", " ^ y
@@ -125,12 +127,12 @@ let string_of_inst = function
   | FLoadi(i) -> "floadi " ^ string_of_int i
   | FStorei(x, i) -> "fstorei " ^ x ^ " " ^ string_of_int i
   | Comment(x) -> "#" ^ x
-  | IfEq(x, y) -> x ^ " = " ^ y (* 発行される命令とは異なる *)
+  | IfEq(x, y) -> x ^ " = " ^ y 
   | IfLT(x, y) -> x ^ " < " ^ y
-  | IfFEq(x, y) -> x ^ " =. " ^ y (* 発行される命令とは異なる *)
+  | IfFEq(x, y) -> x ^ " =. " ^ y 
   | IfFLT(x, y) -> x ^ " <. " ^ y
   | CallCls _ -> "callcls"  (* TODO *)
-  | CallDir(L(l), _, _) -> "calldir " ^ l (* TODO *)
+  | CallDir(Id.L(l), _, _) -> "calldir " ^ l (* TODO *)
   | Save(x, y) -> "save " ^ x ^ ", " ^ y
   | Restore(x) -> "restore " ^ x
   | FInv(x) -> "finv " ^ x
@@ -138,7 +140,8 @@ let string_of_inst = function
   | Write(x) -> "write " ^ x
   | Xor(x, y) -> "xor " ^ x ^ ", " ^ y
   | Jmp -> "jmp"
-  | Goto(L(l)) -> "goto " ^ l
+  | Goto(Id.L(l)) -> "goto " ^ l
+  | Entry -> "entry"
   | Ret -> "ret"
 	     
 let string_of_stmt { sid = sid; inst = e; use = use; def = def } =
@@ -150,7 +153,7 @@ let string_of_stmt { sid = sid; inst = e; use = use; def = def } =
 	 (List.map
 	    (fun (x, t) -> x ^ " : " ^ Type.string_of_type t)
             def) ^
-	   " = ") ^ 
+	   " := ") ^ 
       string_of_inst e
 
 let string_of_block b stmts =
@@ -187,6 +190,7 @@ let to_stmt inst dest =
   | SetL _, [_] -> { sid = gen_sid(); inst = inst; use = []; def = dest }
   | Mov(x), [_] | Neg(x), [_] | Itof(x), [_] | Write(x), [_] -> 
     { sid = gen_sid(); inst = inst; use = [x]; def = dest }
+  | Write(x), ([] | [_, Type.Unit]) ->  { sid = gen_sid(); inst = inst; use = [x]; def = []}
   | Add(x, y'), [_] | Sub(x, y'), [_] -> 
     { sid = gen_sid(); inst = inst; use = x :: fv_id_or_imm y'; def = dest } 
   | Xor(x, y), [_] -> { sid = gen_sid(); inst = inst; use = [x; y]; def = dest }
@@ -194,10 +198,10 @@ let to_stmt inst dest =
     { sid = gen_sid(); inst = inst; use = x :: fv_id_or_imm y'; def = dest }
   | Load (x, y'), [_] -> 
     { sid = gen_sid(); inst = inst; use = x :: fv_id_or_imm y'; def = dest }
-  | Store (x, y, z'), [] | FStore(x, y, z'), [] -> 
+  | Store (x, y, z'), ([] | [_,Type.Unit]) | FStore(x, y, z'), ([] | [_, Type.Unit]) -> 
     { sid = gen_sid (); inst = inst; use = x :: y :: fv_id_or_imm z'; def = [] }
   | Loadi _, [_] -> { sid = gen_sid(); inst = inst; use = []; def = dest }
-  | Storei(x, _), [] | FStorei(x, _), [] -> 
+  | Storei(x, _), ([] | [_, Type.Unit]) | FStorei(x, _), ([] | [_, Type.Unit]) -> 
     { sid = gen_sid(); inst = inst; use = [x]; def = [] }
   | FMov(x), [_, Type.Float] | FNeg(x), [_, Type.Float] | Ftoi(x), [_, Type.Float] 
   | FInv(x), [_, Type.Float] | FSqrt(x), [_, Type.Float]  -> 
@@ -209,40 +213,167 @@ let to_stmt inst dest =
      { sid = gen_sid(); inst = inst; use =  x :: fv_id_or_imm y'; def = dest }
   | FLoadi _, [_, Type.Float] -> 
     { sid = gen_sid(); inst = inst; use = []; def = dest }
+  | Itof(x), [_, Type.Float] ->
+     { sid = gen_sid(); inst = inst; use = [x]; def = dest }
+  | Ftoi(x), [_] -> 
+     { sid = gen_sid(); inst = inst; use = [x]; def = dest }
   | IfEq(x, y) , [] | IfLT(x, y), [] | IfFEq(x, y), [] | IfFLT(x, y), [] ->
      { sid = gen_sid(); inst = inst; use = [x; y]; def = dest }
   | CallCls (_, xs, ys), _ | CallDir(_, xs, ys), _  -> 
      { sid = gen_sid(); inst = inst ; use = xs @ ys; def = dest }
-  | Save(x, y), [] -> { sid = gen_sid(); inst = inst; use = [x; y]; def = [] }
-  | Restore(x), [_] -> { sid = gen_sid(); inst = inst; use = [x]; def = dest }
+  | Save(x, y), [] -> { sid = gen_sid(); inst = inst; use = [x]; def = [] } (*TODO*)
+  | Restore(x), [_] -> { sid = gen_sid(); inst = inst; use = []; def = dest } (*TODO*)
   | Jmp, [] -> { sid = gen_sid(); inst = inst; use = []; def = dest }
-  | Ret, [] -> { sid = gen_sid(); inst = inst; use = []; def = dest } (*TODO goto*)
+  | Ret, [] -> { sid = gen_sid(); inst = inst; use = []; def = dest } 
+  | Goto(l), [] -> { sid = gen_sid(); inst = inst; use = []; def = dest }
   | Comment _, [] -> { sid = gen_sid(); inst = inst; use = []; def = dest } 
   | inst, _ -> Printf.fprintf stderr "%s\n" (string_of_inst inst);
+	       List.iter 
+		 (fun (x, t) -> Printf.fprintf stderr "%s : %s" x (Type.string_of_type t))
+		 dest;
 	       assert false 
 
+(* used in gColoring.ml *)
+let replace_stmt env stmt =
+  let f x = if M.mem x env then M.find x env else x in
+  let f' = function Asm.V x -> Asm.V (f x) | c -> c in
+  let stmt = { stmt with use = List.map f stmt.use } in
+  let inst = match stmt.inst with
+    | Mov(x) -> Mov(f x)
+    | Neg(x) -> Neg(f x)
+    | Add(x, y') -> Add(f x, f' y')
+    | Sub(x, y') -> Sub(f x, f' y')
+    | Sll(x, y') -> Sll (f x, f' y')
+    | Srl(x, y') -> Srl (f x, f' y')
+    | Sla(x, y') -> Sla (f x, f' y')
+    | Sra(x, y') -> Sra (f x, f' y')
+    | Load(x, y') -> Load(f x, f' y')
+    | Store(x, y, z') -> Store(f x, f y, f' z')
+    | Storei(x,i) -> Storei(f x, i)
+    | FMov(x) -> FMov(f x)
+    | FNeg(x) -> FNeg(f x)
+    | FAdd(x, y) -> FAdd(f x, f y)
+    | FSub(x, y) -> FSub(f x, f y)
+    | FMul(x, y) -> FMul(f x, f y)
+    | FDiv(x, y) -> FDiv(f x, f y)
+    | FInv(x) -> FInv(f x)
+    | FSqrt(x) -> FSqrt(f x)
+    | Itof(x) -> Itof(f x)
+    | Ftoi(x) -> Ftoi(f x)
+    | FLoad(x, y') -> FLoad(f x, f' y')
+    | FStore(x, y, z') -> FStore(f x, f y, f' z')
+    | FStorei(x,i) -> FStorei(f x, i)   
+    | IfEq(x, y) -> IfEq(f x, f y)
+    | IfLT(x, y) -> IfLT(f x, f y)
+    | IfFEq(x, y) -> IfFEq(f x, f y)
+    | IfFLT(x, y) -> IfFLT(f x, f y)
+    | CallCls(x, ys, zs) -> CallCls(f x, List.map f ys, List.map f zs)
+    | CallDir(l, xs, ys) -> CallDir(l, List.map f xs, List.map f ys)
+    | Save(x, y) -> Save(f x, y) (* TODO *)
+    | Restore(x) -> Restore(x)  (* TODO *)
+    | Write(x) -> Write(f x)
+    | Xor(x, y) -> Xor(f x, f y)
+    | e -> e
+  in
+    { stmt with inst = inst }
+
+let replace_stmt' env stmt =
+  let stmt = replace_stmt env stmt in
+  let stmt = { stmt with def = List.map (fun (x, t) -> if M.mem x env then (M.find x env, t) else (x, t)) stmt.def } in
+  stmt
+
 let null = "NULL"
-let isnull v = "NULL" == v 
+let isnull v = "NULL" = v 
 let add_block stmts g =
   let b = gen_bid () in
   (b, CFG.add_v b stmts g)    
 let concat_block stmts v g =
-  assert(CFG.mem v g);
-  let (v', g') = add_block stmts g in
-  let g'' = CFG.add_e v v' None g' in
-    (v', g'')
+  if isnull v then add_block stmts g 
+  else
+    (assert(CFG.mem v g);
+     let stmts' = CFG.find v g in
+     let (branch, stmts')  = match List.rev stmts' with
+       | [] -> assert false
+       | st :: sts -> (st,  List.rev sts)
+     in 
+     match branch with
+     | { inst = Jmp } -> (v, CFG.add_v v (stmts' @ stmts) g)
+     | _ ->
+	let (v', g') = add_block stmts g in
+	let g'' = CFG.add_e v v' None g' in
+	(v', g''))
 let concat_stmts stmts =
   concat_block (stmts @ [to_stmt Jmp []])
 
+
+(***** map and fold *****)
+let map_stmt (f : stmt -> stmt) g = CFG.map (fun v -> List.map (fun stmt -> f stmt)) g
+let fold_stmt (f : stmt -> 'a -> 'a) g init = CFG.fold (fun _ stmts acc -> List.fold_left (fun acc stmt -> f stmt acc) acc stmts) g init
+let map_stmt_list (f : stmt -> stmt list) g = CFG.map (fun v stmts -> List.fold_left (fun acc stmt -> acc @ f stmt) [] stmts) g
+let map_func f (Prog(xs, fundefs)) =
+  Prog(xs, M.mapi (fun l func -> f l func) fundefs)
+let map_cfg f prog =
+  map_func (fun l func -> { func with blocks = f l func.blocks }) prog
+
+let fv func =
+  CFG.fold
+    (fun b ->
+     List.fold_right
+       (fun { use = use; def = def } ->
+        S.union (S.union (S.of_list use) (S.of_list (List.map fst def)))))
+    func.blocks S.empty
+    
+
 (*改良の余地あり?*)
-let move_args pars args =  
-  List.fold_right2 (fun par arg xs -> if par == arg then xs else [to_stmt (Mov(arg)) [par, Type.Int]] @ xs) pars args []
+let rec shuffle sw xys = 
+  let (_, xys) = List.partition (fun (x, y) -> x = y) xys in
+    match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
+      | ([], []) -> []
+      | ((x, y) :: xys, []) -> 
+	 (y, sw) :: (x, y) :: 
+	   shuffle sw (List.map (function 
+				  | (y', z) when y = y' -> (sw, z)
+				  | yz -> yz) xys)
+      | (xys, acyc) -> acyc @ shuffle sw xys
+let move_args pars args =
+  assert (List.length pars = List.length args);
+  let swap = Id.genid "swap" in
+  let xys = List.fold_right2 (fun par arg xs -> (par, arg) :: xs) pars args [] in
+  List.fold_right 
+    (fun (par, arg) xs -> xs @ [to_stmt (Mov(arg)) [par, Type.Int]]) 
+    (shuffle swap xys) []
 let move_fargs pars args =
-  List.fold_right2 (fun par arg xs -> if par == arg then xs else [to_stmt (FMov(arg)) [par, Type.Float]] @ xs) pars args []
+  assert (List.length pars = List.length args);
+  let swap = Id.genid "swap" in
+  let xys = List.fold_right2 (fun par arg xs -> (par, arg) :: xs) pars args [] in
+  List.fold_right 
+    (fun (par, arg) xs -> xs @ [to_stmt (FMov(arg)) [par, Type.Float]]) 
+    (shuffle swap xys) []
+(*let move_args pars args =  
+  assert (List.length pars = List.length args);
+  List.fold_right2 (fun par arg xs -> if par == arg then xs else xs @ [to_stmt (Mov(arg)) [par, Type.Int]]) pars args []*)
+(*let move_fargs pars args =
+  assert (List.length pars = List.length args);
+  List.fold_right2 (fun par arg xs -> if par == arg then xs else xs @ [to_stmt (FMov(arg)) [par, Type.Float]]) pars args []*)
+let move_args_with_type xs ys t = 
+  match t with 
+  | Type.Float -> move_fargs xs ys
+  | _ -> move_args xs ys 
+
+
+let rec remove_unreachable head cfg  =
+  let reachables = CFG.reachables head cfg in
+  CFG.fold 
+    (fun v _ cfg -> if List.mem v reachables then
+		      cfg
+		    else 
+		      CFG.remove_v v cfg)
+    cfg cfg
+
+
+
 
 (* env : Id.t -> Type.t *)
-(* this code is very stupid. want a function f which  *
- * converts Asm.Ans(e) -> e                            *)
 let rec g data fname body  = 
   let rec h env v cfg dest tail e  = 
     let concat_asm_exp exp = 
@@ -292,16 +423,40 @@ let rec g data fname body  =
 	   concat_if env v cfg dest tail e1 e2 (IfFEq(x, y))
 	| Asm.IfFLT(x, y, e1, e2) ->
 	   concat_if env v cfg dest tail e1 e2 (IfFLT(x, y))
-        | Asm.CallDir (L(l), args, fargs) -> (* TODO : change tail call to jump*)
-           let func = assert (if M.mem l data then true else (Printf.fprintf stderr "%s\n" l; false)); (*外部関数で落ちる*)
+	| Asm.CallDir (Id.L(l), args, fargs) when not (M.mem l data) -> (*external function call*)
+	    concat_asm_exp (CallDir(Id.L(l), args, fargs))
+        | Asm.CallDir (Id.L(l), args, fargs) -> (* TODO : change tail call to jump*)
+           let func = assert (if M.mem l data then true else (Printf.fprintf stderr "%s\n" l; false)); 
 		      M.find l data in
            (match () with
              | _ when tail && l = fname -> (* tail recursion *)
                 let (v', cfg') = concat_stmts (move_args func.args args) v cfg in
 		let (v'', cfg'') = concat_stmts (move_fargs func.fargs fargs) v' cfg' in
-                 let cfg3 = CFG.add_e v'' func.head None cfg'' in (* jump to the head of the function *)
+		let after_head = List.hd (CFG.succs func.head cfg'') in
+                 let cfg3 = CFG.add_e v'' after_head None cfg'' in (* jump to the next block of the head of the function *)
                    (null, cfg3)
-             | _ -> concat_asm_exp (CallDir(L(l), args, fargs)))
+	     | _  when tail -> (* tail call, but not tail recursion *)
+		                            (* TODO: 呼び出し規約に関する操作をここで書くのは汚い                   　　　 *)   
+		let n = List.length args in (* 外部関数呼び出しでも同じ考えが使われているので統合する. Goto(l, args, fargs)*)
+		let m = List.length fargs in(* とかにして,gRegallocの関数で統一的に扱いたい                                *)
+		let rec take n xs =  (* TODO: 自作の標準ライブラリかリスト用のmoduleほしい. std.ml? l.ml? *)
+		  (match (n, xs) with
+		      | 0, _ -> []
+		      | _, [] -> []
+		      | n, x::xs -> x :: take (n - 1) xs) 
+		in
+		let actual_args = take n Asm.allregs in
+		let actual_fargs = take m Asm.allfregs in
+		let init_stmt = 
+		     (move_args actual_args args) @ (move_fargs actual_fargs fargs)
+		in
+		(*let (v', cfg') = concat_stmts (move_args func.args args) v cfg in
+		let (v'', cfg'') = concat_stmts (move_fargs func.fargs fargs) v' cfg' in*)
+		let v3 = gen_bid() in
+		let cfg3 = CFG.add_v v3 (init_stmt @ [to_stmt (Goto(Id.L(l))) []])  cfg in
+		let cfg4 = CFG.add_e v v3 None cfg3 in
+		(null, cfg4)
+             | _ -> concat_asm_exp (CallDir(Id.L(l), args, fargs)))
 	| Asm.CallCls _ -> Printf.fprintf stderr "TODO\n"; assert false
 	| Asm.Comment _ -> Printf.fprintf stderr "TODO\n"; assert false
        )
@@ -313,33 +468,57 @@ let rec g data fname body  =
 	 
   and concat_if env v cfg dest tail e1 e2 ifexp =
     let (v, cfg') = concat_block [to_stmt ifexp []] v cfg in
-    let (v1, cfg1) = concat_stmts [] v cfg' in (*無駄では?*)
+    let (v1, cfg1) = concat_stmts [] v cfg' in 
     let cfg'' = CFG.add_e v v1 (Some Then) cfg1 in
     let (v2, cfg2) = concat_stmts [] v cfg'' in
     let cfg''' = CFG.add_e v v2 (Some Else) cfg2 in
     let (v1', cfg1') = h env v1 cfg''' dest tail e1 in
     let (v2', cfg2') = h env v2 cfg1' dest tail e2 in
     
-    let (v_cong, cfg4) = add_block [to_stmt Jmp []] cfg2' in (*ここJmpしたら戻りすぎる?*)
+    let (v_cong, cfg4) = add_block [to_stmt Jmp []] cfg2' in 
 
     let cfg5 = if isnull v1' then cfg4 else CFG.add_e v1' v_cong None cfg4 in
     let cfg6 = if isnull v2' then cfg5 else CFG.add_e v2' v_cong None cfg5 in
-      (v_cong, cfg6)
+
+    (*let cfg7 = CFG.add_e v (List.hd (CFG.succs v1 cfg6)) (Some Then) cfg6 in
+    let cfg8 = CFG.add_e v (List.hd (CFG.succs v2 cfg7)) (Some Else) cfg7 in*)
+    (*let cfg9 = CFG.remove_v v1 cfg8 in
+    let cfg10 = CFG.remove_v v2 cfg9 in*)
+      (v_cong, cfg6) (*cfg10*)
 
   in 
   let func = assert (if M.mem fname data then true else (Printf.fprintf stderr "%s\n" fname; false)); 
 	     M.find fname data in
   let head = func.head in 
-  let cfg = CFG.add_v head [] func.blocks  in
-  h M.empty head cfg [fname ^ "_ret", func.ret] true body
+  let cfg = CFG.add_v head
+	    ([{ sid = gen_sid ();
+	       inst = Entry; 
+	       use = [];
+	       def =  ["$r00", Type.Int; "$f00", Type.Float] @
+			(List.map (fun x -> (x, Type.Int)) func.args) @ (List.map (fun x -> (x, Type.Float)) func.fargs) }
+	     ] @
+	       [to_stmt Jmp []])
+	    func.blocks  
+  in
+  let b = gen_bid() in
+  let cfg = CFG.add_v b [to_stmt Jmp []] cfg in
+  let cfg = CFG.add_e head b None cfg in
+  let dest = 
+    match func.ret with 
+      Type.Unit -> [] 
+    | _ -> [fname ^ "_ret", func.ret]
+  in
+  h M.empty b cfg dest true body
 
+
+(* main routine Asm.Prog -> Block.Prog *)
 let f (Asm.Prog(xs, ys, e)) = 
   let (data, body_data) = 
     List.fold_left 
-      (fun (data, body_data) { Asm.name = L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = ret } -> 
+      (fun (data, body_data) { Asm.name = Id.L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = ret } -> 
        let data' = M.add 
 		     l
-		     { name = L(l);
+		     { name = Id.L(l);
 		       args = xs; 
 		       fargs = ys; 
 		       blocks = CFG.empty;
@@ -354,11 +533,11 @@ let f (Asm.Prog(xs, ys, e)) =
       ys
   in 
   let data = M.add "__main__" 
-		   { name = L("__main__"); 
+		   { name = Id.L("__main__"); 
 		     args = [];
 		     fargs = []; 
 		     blocks = CFG.empty;
-		     ret = Type.Unit;
+		     ret = !Typing.ret_type; 
 		     head = "__main___entry";
 		     storing_regs = [] } 
 		   data 
@@ -370,8 +549,15 @@ let f (Asm.Prog(xs, ys, e)) =
 		 else (assert (if M.mem fname body_data then true else (Printf.fprintf stderr "%s\n" fname; false));  
 		       M.find fname body_data) in
      let (v, cfg) = g data fname fbody in
-     let (_, cfg') = concat_stmts [to_stmt Ret []] v cfg in
-     { fundef with  blocks = cfg' })
+     let (_, cfg') = concat_block 
+		       [{ sid = gen_sid ();
+			  inst = Ret; 
+			  use = (match  fundef.ret with Type.Unit -> [] | _ -> [fname ^ "_ret"]);
+			  def = [] }]
+		       v cfg 
+     in
+     let cfg'' = remove_unreachable fundef.head cfg' in
+     { fundef with  blocks = cfg'' })
     data 
   in
   Prog(xs, data)

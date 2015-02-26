@@ -1,15 +1,43 @@
+(* liveness analysis based on tiger book *
+ * it works but a bug is left            *)
+
 type t = {
   out : S.t M.t;
   def : S.t M.t;
   use  : S.t M.t;
 }
 
-
 (* operator to make a function as an infix operator *)
 let (<|) x y = y x and (|>) x y = x y
 
+(* used in gColoring.ml *)
+let transfer stmt set =
+  List.fold_left
+    (fun acc x -> S.add x acc)
+    (List.fold_left
+       (fun acc (x, _) -> S.remove x acc)
+       set
+       stmt.Block.def)
+    stmt.Block.use
+
+(* zero registers should be always alive *)
+let add_zero_reg liveness typ =
+  let zreg = 
+    match typ with
+    | Type.Float -> "$f00"
+    | _ -> "$r00"
+  in 
+  let liveout = 
+    M.fold (fun x set acc -> M.add x (S.add zreg set) acc) 
+	   liveness.out liveness.out 
+  in
+  { liveness with out = liveout }
+
+(* !!!CRITICAL!!!!                                                                                    *
+ * theoretically a threshold isn't needed, but somehow this algorithm doesn't stop with some programs *)
+(* main function *) (* TODO: reduce side effect. use fold (or ...) instead of while *) 
 let f cfg =
-  let bs = Block.CFG.top_sort cfg in 
+  let bs = try Block.CFG.top_sort cfg with _ -> Block.CFG.vertices cfg in 
   let live_in = ref (List.fold_right (fun b m -> M.add b S.empty m) bs M.empty) in
   let live_out = ref !live_in in
   let def =
@@ -41,24 +69,24 @@ let f cfg =
   in
 
   let flg = ref true in
-  while !flg do
+  let count = ref 0 in
+  while !flg && (!count < 100000) do
     let live_in' = !live_in in
     let live_out' = !live_out in
+    count := !count + 1;
     flg := false;
     List.iter 
       (fun b ->
-	 let blive_in' = (assert (M.mem b !live_in); M.find b !live_in) in 
-	 let blive_out' = (assert (M.mem b !live_out); M.find b !live_out) in
-	 (* in[n] <- use[n] ∪ (out[n] - def[n]) *)
+	 (* in[n] := use[n] ∪ (out[n] \ def[n]) *)
 	 let blive_in = (assert (M.mem b use); M.find b use) <|S.union|> 
-			  (M.find b !live_out) <|S.diff|> (assert (M.mem b def); M.find b def)
+			  (assert (M.mem b !live_out);M.find b !live_out) <|S.diff|> (assert (M.mem b def); M.find b def)
 	 in 
-	 (* out[n] <- ∪(forall s in succ[n]) in[s] *)
+	 (* out[n] := ∪(forall s in succ[n]) in[s] *)
 	 let blive_out = 
-	   List.fold_left (
-	       fun env succ ->
-	       env <|S.union|> (assert (M.mem succ !live_in); M.find succ !live_in)
-	     ) S.empty (Block.CFG.succs b cfg)
+	   List.fold_left 
+	     (fun env succ ->
+	       env <|S.union|> (assert (M.mem succ !live_in); M.find succ !live_in))
+	     S.empty (Block.CFG.succs b cfg)
 	 in
 	 live_in := M.add b blive_in !live_in;
 	 live_out := M.add b blive_out !live_out;
@@ -66,6 +94,15 @@ let f cfg =
       bs;
 
   done;
+  if (!count = 100000)
+  then 
+    (*(M.iter (fun x y -> S.iter (fun z -> Printf.fprintf stderr "%s: %s " x z) y) !live_out;*) 
+    (* assert false; *)   
+     { out = !live_out;
+      def = def;
+      use  = use }
+       
+  else
     { out = !live_out;
       def = def;
       use  = use }
