@@ -448,6 +448,7 @@ let assign_colors data =
 (***** rewrite *****)
 
 let rewrite_program data func =
+  Block.output_for_graphviz stderr func.Block.blocks;
   S.iter (fun x -> assert (not (Asm.is_reg x))) data.spilled_nodes;
   (* generate a vitual pos on the stack *)
   let stackpos =
@@ -483,7 +484,7 @@ let rewrite_program data func =
            | stmt -> [stmt])
         cfg
     in
-    (* add restore before def of spilled variables *)
+    (* add restore before use of spilled variables *)
     let cfg =
       Block.map_stmt_list
         (function
@@ -492,13 +493,14 @@ let rewrite_program data func =
                  List.fold_left
                    (fun (env, restores) x ->
                       if M.mem x stackpos then
-                        let x' = Id.genid x in
-			let pos = M.find x stackpos in
-                        (M.add x x' env,
-                         Block.to_stmt
-			   (Block.Restore(pos))
-                           [x', (assert (M.mem x !tenv); M.find x !tenv)]
-			 :: restores)
+                        (
+			 let x' = Id.genid x in
+			 let pos = M.find x stackpos in
+                         (M.add x x' env, 
+                          Block.to_stmt
+			    (Block.Restore(pos))
+                           [x', (assert (M.mem x !tenv); M.find x !tenv)] 
+			  :: restores))
                       else
                         (env, restores))
                    (M.empty, []) use
@@ -510,7 +512,30 @@ let rewrite_program data func =
     in
     { func with Block.blocks = cfg }
   in
-    func
+  func
+
+(***** for debug *****)
+let sanitize b = 
+  let r = Str.regexp "\\." in
+  Str.global_replace r "_" b
+
+let output_for_graphviz oc data =
+  
+  Printf.fprintf oc "graph cfg {\n";
+  Printf.fprintf oc "node [shape=circle];\n";
+  M.iter
+    (fun v _  ->
+     Printf.fprintf oc "%s [label=\"%s\"];\n" (sanitize v) v)
+     data.adj_list;
+  CS.iter
+    (fun (u, v) ->
+     Printf.fprintf oc "%s -- %s ;\n" (sanitize u) (sanitize v)) 
+    data.adj_set;
+  CS.iter
+    (fun (u, v) ->
+     Printf.fprintf oc "%s -- %s [style = dotted];\n" (sanitize u) (sanitize v)) 
+    data.worklist_moves;
+  Printf.fprintf oc "}\n"
 
 (***** main *****)
 
@@ -520,6 +545,7 @@ let rec f func =
 		   (match typ with Type.Float -> "float" | _ -> "int");
     
     let data = build typ func in
+    (*output_for_graphviz stderr data; *)
 
     let rec h = function
       | { simplify_worklist = w } as data when not (S.is_empty w) -> h (simplify data)
@@ -563,26 +589,4 @@ let rec f func =
   in
   func
     
-(***** for debug *****)
-let sanitize b = 
-  let r = Str.regexp "\\." in
-  Str.global_replace r "_" b
-
-let output_for_graphviz oc data =
-  
-  Printf.fprintf oc "graph cfg {\n";
-  Printf.fprintf oc "node [shape=circle];\n";
-  M.iter
-    (fun v _  ->
-     Printf.fprintf oc "%s [label=\"%s\"];\n" (sanitize v) v)
-     data.adj_list;
-  CS.iter
-    (fun (u, v) ->
-     Printf.fprintf oc "%s -- %s ;\n" (sanitize u) (sanitize v)) 
-    data.adj_set;
-  CS.iter
-    (fun (u, v) ->
-     Printf.fprintf oc "%s -- %s [style = dotted];\n" (sanitize u) (sanitize v)) 
-    data.worklist_moves;
-  Printf.fprintf oc "}\n"
 
