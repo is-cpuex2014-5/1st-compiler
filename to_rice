@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-ln -sf RICE/{*.ml{,i},libmincaml.S} .
