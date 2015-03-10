@@ -89,7 +89,7 @@ let emit_inst oc = function
 	Printf.fprintf oc "\tcall\t%s\n" l;
 	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" Asm.reg_sp Asm.reg_sp (ss + 1);
   (* save and restore *)
-  | { inst = Save("$r00", y) }   | { inst = Save("$f00", y) } -> 
+  | { inst = Save("$r00", y) } | { inst = Save("$r13", y) }   |{ inst = Save("$f00", y) } -> 
      (*unused_stackpos := S.add y !unused_stackpos;*)
     ()
   | { inst = Save(x, y) }
@@ -102,10 +102,10 @@ let emit_inst oc = function
     Printf.fprintf oc "\tfstore\t%s, %s, %d\n" x Asm.reg_sp (offset y) 
   | { inst = Save(x, y) } -> 
      assert (if S.mem y !stackset then true 
-	     else (Printf.fprintf stderr "%s\n" y; false));
+	     else (Printf.fprintf stderr "%s %s\n" x y; false));
      ()
-  | { inst = Restore(y); def = ["$r00",_] } | { inst = Restore(y); def = ["$f00",_] } ->
-     ()
+  | { inst = Restore(y); def = ["$r00",_] } | { inst = Restore(y); def = ["$r13",_] } |
+  { inst = Restore(y); def = ["$f00",_] } -> ()
   | { inst = Restore(y); def = [x, _] }
        when List.mem x Asm.allregs ->
      Printf.fprintf oc "\tload\t%s, %s, %d\n" x Asm.reg_sp (offset y) 

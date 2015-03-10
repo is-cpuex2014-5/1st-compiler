@@ -165,7 +165,7 @@ let init_cost func data =
 let build typ func =
   (* initial is the objects those will be colored *)
   let (data, initial) =
-    let precolored = S.of_list ((match typ with Type.Float ->  "$f00" :: Asm.allfregs | _ -> "$r00" :: Asm.allregs)) in
+    let precolored = S.of_list ((match typ with Type.Float ->  "$f00" :: Asm.allfregs | _ -> ["$r00"; Asm.reg_hp] @  Asm.allregs)) in
     let f' stmt =
       List.fold_right
         (fun (x, t) acc ->
@@ -207,7 +207,7 @@ let build typ func =
 
   let is_target x = S.mem x data.precolored || S.mem x initial in
 
-  let liveness = Liveness.add_zero_reg (Liveness.f func.Block.blocks) typ in
+  let liveness = Liveness.add_special_reg (Liveness.f func.Block.blocks) typ in
 
   let data =
     Block.CFG.fold
@@ -448,7 +448,7 @@ let assign_colors data =
 (***** rewrite *****)
 
 let rewrite_program data func =
-  Block.output_for_graphviz stderr func.Block.blocks;
+  (*Block.output_for_graphviz stderr func.Block.blocks;*)
   S.iter (fun x -> assert (not (Asm.is_reg x))) data.spilled_nodes;
   (* generate a vitual pos on the stack *)
   let stackpos =

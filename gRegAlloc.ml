@@ -138,21 +138,22 @@ let par2arg prog =
 		 | [] -> ([], Type.Unit) 
 		 | _ -> assert false)
 	      in
+	      let ret_reg = Asm.ret_reg_of rettype in
 	      (try 
 		let Block.Prog(_, fundefs) = prog in (* add moves from arguments to paramator *)
 		 let func = M.find l fundefs in
 		 let init_stmt = 
 		   (Block.move_args func.Block.args args) @ (Block.move_fargs func.Block.fargs fargs)
 		 in
-		 let fin_stmt = 
+		 let fin_stmt =
 		   match rettype with
 		   | Type.Unit -> []
-		   | _ -> Block.move_args_with_type retval [(l ^ "_ret")] rettype 
+		   | _ -> Block.move_args_with_type retval [ret_reg] rettype 
 		 in
 		 let def = 
 		   match rettype with
 		   | Type.Unit -> []
-		   | _ -> [(l ^ "_ret"), rettype]
+		   | _ -> [ret_reg, rettype]
 		 in
 		 init_stmt @
                    [{ stmt with
@@ -172,7 +173,7 @@ let par2arg prog =
 		   in
 		   let actual_args = take n Asm.allregs in
 		   let actual_fargs = take m Asm.allfregs in
-		   let ret_reg = Asm.ret_reg_of rettype in
+		   (* Printf.fprintf stderr "ext-function %s: has ret type of %s\n" l (Type.string_of_type rettype); *)
 		   let init_stmt = 
 		     (Block.move_args actual_args args) @ (Block.move_fargs actual_fargs fargs)
 		   in

@@ -21,14 +21,14 @@ let transfer stmt set =
     stmt.Block.use
 
 (* zero registers should be always alive *)
-let add_zero_reg liveness typ =
+let add_special_reg liveness typ =
   let zreg = 
     match typ with
-    | Type.Float -> "$f00"
-    | _ -> "$r00"
+    | Type.Float -> ["$f00"]
+    | _ -> ["$r00"; Asm.reg_hp]
   in 
   let liveout = 
-    M.fold (fun x set acc -> M.add x (S.add zreg set) acc) 
+    M.fold (fun x set acc -> M.add x (S.union (S.of_list zreg) set) acc) 
 	   liveness.out liveness.out 
   in
   { liveness with out = liveout }
